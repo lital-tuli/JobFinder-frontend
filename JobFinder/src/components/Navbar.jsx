@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../services/auth';
+import { useAuth } from '../hooks/useAuth'; 
 
 function Navbar() {
     const { isAuthenticated, logout, user } = useAuth();
