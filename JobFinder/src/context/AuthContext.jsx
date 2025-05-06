@@ -1,5 +1,4 @@
-// src/contexts/AuthContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import userService from '../services/userService';
 
 // Create auth context
@@ -36,17 +35,14 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       return data;
     } catch (error) {
+      console.error("Login failed:", error);
       throw error;
     }
   };
 
   // Register function
   const register = async (userData) => {
-    try {
-      return await userService.register(userData);
-    } catch (error) {
-      throw error;
-    }
+    return await userService.register(userData);
   };
 
   // Logout function
@@ -63,11 +59,11 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       return updatedUser;
     } catch (error) {
+      console.error("Profile update failed:", error);
       throw error;
     }
   };
 
-  // Context value
   const value = {
     user,
     isAuthenticated,
@@ -75,7 +71,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    updateProfile
+    updateProfile,
   };
 
   return (
@@ -85,7 +81,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use auth context
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export default AuthContext;
