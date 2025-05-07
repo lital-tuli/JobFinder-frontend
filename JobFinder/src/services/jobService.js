@@ -1,7 +1,6 @@
-// src/services/jobService.js
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const JOBS_URL = `${API_BASE_URL}/jobs`;
 
 // Create axios instance with default config
