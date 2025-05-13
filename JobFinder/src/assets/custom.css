@@ -1,20 +1,20 @@
+/* src/assets/custom.css */
 
 :root {
-  /* Primary color palette */
-  --jf-primary: #6c63ff;      /* Main purple */
-  --jf-primary-dark: #5a52d9; /* Darker purple for hover states */
-  --jf-secondary: #ff6b6b;    /* Accent red */
-  --jf-tertiary: #4ecdc4;     /* Teal accent */
-  --jf-dark: #2d3436;         /* Near black for text */
-  --jf-light: #f8f9fa;        /* Light background */
-  --jf-gray: #b2bec3;         /* Neutral gray */
-  --jf-success: #06d6a0;      /* Green for success states */
-  --jf-warning: #ffd166;      /* Yellow for warnings */
-  --jf-danger: #ef476f;       /* Pink-red for errors/danger */
+  /* Primary color palette inspired by the reference */
+  --jf-primary: #ff6b00;      /* Main orange color from the images */
+  --jf-primary-dark: #e65100; /* Darker orange for hover states */
+  --jf-secondary: #213547;    /* Dark text color */
+  --jf-light: #f5f7fa;        /* Light background */
+  --jf-light-gray: #f0f2f5;   /* Light gray for backgrounds */
+  --jf-gray: #6c757d;         /* Gray for subdued text */
+  --jf-success: #28a745;      /* Green for success states */
+  --jf-warning: #ffc107;      /* Yellow for warning states */
+  --jf-info: #17a2b8;         /* Blue for info states */
   
   /* Typography */
-  --jf-font-main: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif, Arial, sans-serif;
-  --jf-font-headings: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif, Arial, sans-serif;
+  --jf-font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Helvetica, Arial, sans-serif;
+  --jf-font-headings: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
   /* Shadows */
   --jf-shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -25,8 +25,8 @@
 /* Base styles */
 body {
   font-family: var(--jf-font-main);
-  color: var(--jf-dark);
-  background-color: #f5f7fa;
+  color: var(--jf-secondary);
+  background-color: #fff;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -34,14 +34,18 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
+.bg-primary-light {
+  background-color: rgba(255, 107, 0, 0.05);
+}
+
 /* Navbar customization */
 .navbar {
-  box-shadow: var(--jf-shadow);
+  box-shadow: var(--jf-shadow-sm);
   background: white !important;
+  padding: 0.75rem 1rem;
 }
 
 .navbar-brand {
-  font-family: var(--jf-font-headings);
   font-weight: 700;
   font-size: 1.5rem;
   color: var(--jf-primary) !important;
@@ -57,11 +61,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .nav-link {
-  color: var(--jf-dark) !important;
+  color: var(--jf-secondary) !important;
   font-weight: 500;
   transition: color 0.2s ease-in-out;
-  padding: 0.75rem 1rem !important;
-  border-radius: 4px;
+  padding: 0.5rem 1rem !important;
 }
 
 .nav-link:hover, .nav-link:focus {
@@ -70,14 +73,13 @@ h1, h2, h3, h4, h5, h6 {
 
 .nav-link.active {
   color: var(--jf-primary) !important;
-  background-color: rgba(108, 99, 255, 0.1);
 }
 
 /* Button customization */
 .btn {
   font-weight: 600;
   padding: 0.6rem 1.2rem;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s ease-in-out;
 }
 
@@ -89,18 +91,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-primary:hover, .btn-primary:focus {
   background-color: var(--jf-primary-dark);
   border-color: var(--jf-primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(108, 99, 255, 0.3);
-}
-
-.btn-secondary {
-  background-color: var(--jf-secondary);
-  border-color: var(--jf-secondary);
-}
-
-.btn-success {
-  background-color: var(--jf-success);
-  border-color: var(--jf-success);
+  box-shadow: 0 4px 8px rgba(255, 107, 0, 0.3);
 }
 
 .btn-outline-primary {
@@ -116,7 +107,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Form controls */
 .form-control, .form-select {
   padding: 0.75rem 1rem;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid #e2e8f0;
   font-size: 0.95rem;
   transition: all 0.2s ease;
@@ -124,36 +115,26 @@ h1, h2, h3, h4, h5, h6 {
 
 .form-control:focus, .form-select:focus {
   border-color: var(--jf-primary);
-  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.25);
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.25);
 }
 
-.form-label {
-  font-weight: 600;
-  margin-bottom: 0.4rem;
-  color: #4a5568;
+.input-group-text {
+  background-color: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  color: #6c757d;
 }
 
 /* Card customization */
 .card {
   border: none;
-  border-radius: 10px;
-  box-shadow: var(--jf-shadow);
+  border-radius: 8px;
+  box-shadow: var(--jf-shadow-sm);
   transition: all 0.3s ease;
 }
 
 .card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--jf-shadow-lg);
-}
-
-.card-title {
-  color: var(--jf-dark);
-}
-
-.card-header {
-  background-color: rgba(248, 249, 250, 0.7);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 1.25rem 1.5rem;
+  transform: translateY(-2px);
+  box-shadow: var(--jf-shadow);
 }
 
 .card-body {
@@ -178,7 +159,7 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   top: 0;
   left: 0;
-  height: 4px;
+  height: 3px;
   width: 100%;
   background-color: var(--jf-primary);
   opacity: 0;
@@ -189,33 +170,12 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 1;
 }
 
-.job-badge-full-time {
-  background-color: var(--jf-primary);
-}
-
-.job-badge-part-time {
-  background-color: var(--jf-tertiary);
-}
-
-.job-badge-contract {
-  background-color: var(--jf-warning);
-}
-
-.job-badge-internship {
-  background-color: var(--jf-gray);
-  color: var(--jf-dark);
-}
-
-.job-badge-remote {
-  background-color: var(--jf-success);
-}
-
 /* Company logo placeholder */
-.company-logo-placeholder {
-  width: 50px;
-  height: 50px;
+.company-logo {
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
-  background-color: #e9ecef;
+  background-color: var(--jf-light-gray);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -224,80 +184,56 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 1.2rem;
 }
 
-/* Job details page */
-.job-details-header {
-  padding: 2rem 0;
-  background: linear-gradient(145deg, rgba(108, 99, 255, 0.1) 0%, rgba(108, 99, 255, 0.05) 100%);
-  border-radius: 12px;
-  margin-bottom: 2rem;
-}
-
-.job-info-list {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-.job-info-list li {
-  padding: 0.5rem 0;
+/* Category cards */
+.category-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  background-color: rgba(255, 107, 0, 0.1);
 }
 
-.job-info-list i {
-  color: var(--jf-primary);
-  margin-right: 0.75rem;
-  font-size: 1.2rem;
+.hover-lift {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-/* Login/Register forms */
-.auth-card {
-  border-radius: 12px;
-  box-shadow: var(--jf-shadow-lg);
-  max-width: 500px;
-  margin: 0 auto;
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--jf-shadow);
 }
 
-.auth-card .card-header {
-  background-color: var(--jf-primary);
-  color: white;
-  text-align: center;
-  padding: 1.5rem;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-}
-
-.auth-card .btn-primary {
-  width: 100%;
-  padding: 0.75rem;
-  margin-top: 1rem;
+/* Hero section */
+.hero-section {
+  background: linear-gradient(to right, rgba(255, 107, 0, 0.05), rgba(255, 107, 0, 0.1));
+  padding: 5rem 0;
 }
 
 /* Footer */
 .footer {
-  background-color: #ffffff;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
-  padding: 2rem 0;
-  margin-top: 4rem;
+  background-color: var(--jf-light);
+  padding: 4rem 0 2rem;
+  margin-top: 3rem;
 }
 
-.footer-brand {
-  font-family: var(--jf-font-headings);
-  font-weight: 700;
-  font-size: 1.5rem;
-  color: var(--jf-primary);
+.footer h5 {
+  font-weight: 600;
+  margin-bottom: 1.5rem;
 }
 
 .footer-links {
   list-style: none;
-  padding-left: 0;
+  padding: 0;
 }
 
 .footer-links li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .footer-links a {
-  color: var(--jf-dark);
+  color: var(--jf-secondary);
   text-decoration: none;
   transition: color 0.2s ease;
 }
@@ -306,58 +242,23 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--jf-primary);
 }
 
-/* Utilities */
+/* Text colors */
 .text-primary {
   color: var(--jf-primary) !important;
 }
 
-.text-secondary {
-  color: var(--jf-secondary) !important;
-}
-
-.text-tertiary {
-  color: var(--jf-tertiary) !important;
-}
-
-.bg-primary-light {
-  background-color: rgba(108, 99, 255, 0.1);
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+/* CTA Section */
+.cta-section {
+  background-color: var(--jf-primary);
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
+  .hero-section {
+    padding: 3rem 0;
+  }
+  
   .card-body {
     padding: 1.25rem;
-  }
-  
-  .job-details-header {
-    padding: 1.5rem 0;
-  }
-  
-  .btn {
-    padding: 0.5rem 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .card {
-    border-radius: 8px;
-  }
-  
-  .job-details-header {
-    padding: 1rem 0;
-  }
-  
-  .navbar-brand {
-    font-size: 1.25rem;
   }
 }

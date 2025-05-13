@@ -1,4 +1,4 @@
-// src/pages/JobDetaisPage.jsx
+// src/pages/JobDetailsPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -93,47 +93,90 @@ function JobDetailsPage() {
     );
 
     return (
-        <div className="container">
-            <div className="card my-4">
-                <div className="card-header bg-primary text-white">
-                    <h2 className="mb-0">{job.title}</h2>
+        <div className="container py-5">
+            <div className="card shadow-sm border-0 mb-4">
+                <div className="card-header bg-primary text-white py-3">
+                    <div className="container">
+                        <div className="row align-items-center">
+                            <div className="col-md-9">
+                                <h2 className="mb-0">{job.title}</h2>
+                                <p className="mb-0 fs-5">{job.company}</p>
+                            </div>
+                            <div className="col-md-3 text-md-end mt-3 mt-md-0">
+                                <span className="badge bg-light text-dark py-2 px-3 fs-6">
+                                    {job.jobType}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="card-body">
-                    <h5 className="mb-3">{job.company}</h5>
-                    
-                    <div className="row mb-3">
-                        <div className="col-md-4">
-                            <p className="mb-1"><strong>Location:</strong></p>
-                            <p>{job.location}</p>
+                
+                <div className="card-body p-4">
+                    <div className="row mb-4">
+                        <div className="col-md-4 mb-3 mb-md-0">
+                            <div className="d-flex align-items-center">
+                                <i className="bi bi-geo-alt-fill text-primary me-2 fs-5"></i>
+                                <div>
+                                    <p className="mb-0 fw-bold">Location</p>
+                                    <p className="mb-0">{job.location}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="col-md-4">
-                            <p className="mb-1"><strong>Job Type:</strong></p>
-                            <p>{job.jobType}</p>
+                        
+                        <div className="col-md-4 mb-3 mb-md-0">
+                            <div className="d-flex align-items-center">
+                                <i className="bi bi-currency-dollar text-primary me-2 fs-5"></i>
+                                <div>
+                                    <p className="mb-0 fw-bold">Salary</p>
+                                    <p className="mb-0">{job.salary || 'Not specified'}</p>
+                                </div>
+                            </div>
                         </div>
+                        
                         <div className="col-md-4">
-                            <p className="mb-1"><strong>Salary:</strong></p>
-                            <p>{job.salary || 'Not specified'}</p>
+                            <div className="d-flex align-items-center">
+                                <i className="bi bi-calendar-date text-primary me-2 fs-5"></i>
+                                <div>
+                                    <p className="mb-0 fw-bold">Posted Date</p>
+                                    <p className="mb-0">
+                                        {new Date(job.createdAt).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div className="mb-4">
-                        <h5>Description</h5>
-                        <p>{job.description}</p>
+                    <div className="row mb-4">
+                        <div className="col-12">
+                            <h4>Job Description</h4>
+                            <p>{job.description}</p>
+                        </div>
                     </div>
                     
-                    <div className="mb-4">
-                        <h5>Requirements</h5>
-                        <p>{job.requirements}</p>
+                    <div className="row mb-4">
+                        <div className="col-12">
+                            <h4>Requirements</h4>
+                            <p>{job.requirements}</p>
+                        </div>
                     </div>
                     
-                    <div className="mb-4">
-                        <h5>Contact</h5>
-                        <p>Email: {job.contactEmail}</p>
+                    <div className="row mb-4">
+                        <div className="col-12">
+                            <h4>Contact Information</h4>
+                            <p>
+                                <i className="bi bi-envelope me-2"></i>
+                                {job.contactEmail}
+                            </p>
+                        </div>
                     </div>
                     
-                    <div className="d-flex gap-2">
+                    <div className="d-flex flex-wrap gap-3 mt-4">
                         <button 
-                            className="btn btn-primary" 
+                            className="btn btn-primary btn-lg"
                             onClick={handleApply}
                             disabled={applicationStatus === 'applied' || applicationStatus === 'loading'}
                         >
@@ -143,11 +186,19 @@ function JobDetailsPage() {
                             {applicationStatus === 'applied' ? 'Applied ✓' : 'Apply Now'}
                         </button>
                         
-                        <button className="btn btn-outline-secondary" onClick={handleSave}>
-                            Save for Later
+                        <button 
+                            className="btn btn-outline-primary btn-lg"
+                            onClick={handleSave}
+                        >
+                            <i className="bi bi-bookmark me-2"></i>
+                            Save Job
                         </button>
                         
-                        <button className="btn btn-outline-primary ms-auto" onClick={() => navigate(-1)}>
+                        <button 
+                            className="btn btn-outline-secondary btn-lg"
+                            onClick={() => navigate(-1)}
+                        >
+                            <i className="bi bi-arrow-left me-2"></i>
                             Back to Jobs
                         </button>
                     </div>

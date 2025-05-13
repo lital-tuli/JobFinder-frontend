@@ -1,3 +1,4 @@
+// src/components/JobCard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
@@ -28,76 +29,62 @@ const JobCard = ({ job, saved, onSave }) => {
   // Helper for job type badge
   const getJobTypeBadgeClass = (jobType) => {
     switch(jobType) {
-      case 'Full-time': return 'job-badge-full-time';
-      case 'Part-time': return 'job-badge-part-time';
-      case 'Contract': return 'job-badge-contract';
-      case 'Internship': return 'job-badge-internship';
-      case 'Remote': return 'job-badge-remote';
+      case 'Full-time': return 'bg-primary';
+      case 'Part-time': return 'bg-info';
+      case 'Contract': return 'bg-warning';
+      case 'Internship': return 'bg-secondary';
+      case 'Remote': return 'bg-success';
+      case 'Hybrid': return 'bg-info';
       default: return 'bg-secondary';
     }
   };
 
-  // Create company logo placeholder (first letter of company name)
-  const getCompanyInitial = (company) => {
-    return company && company.length > 0 ? company.charAt(0).toUpperCase() : 'C';
-  };
-
-  // Truncate description for the card
-  const truncateDescription = (text, maxLength = 120) => {
-    if (!text) return '';
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-  };
-
   return (
-    <div className="card job-card mb-4 h-100">
+    <div className="card h-100 shadow-sm border-0 job-card">
       <div className="card-body">
         <div className="d-flex justify-content-between mb-3">
-          <div className="d-flex">
-            <div className="company-logo-placeholder me-3">
-              {getCompanyInitial(job.company)}
-            </div>
-            <div>
-              <h5 className="card-title mb-1">{job.title}</h5>
-              <h6 className="card-subtitle text-muted">{job.company}</h6>
-            </div>
+          <div className="company-logo bg-light rounded p-3">
+            <i className={`bi bi-${job.companyLogo || 'building'} fs-4 text-primary`}></i>
           </div>
-          <div className="text-end">
+          <div>
             <span className={`badge ${getJobTypeBadgeClass(job.jobType)}`}>{job.jobType}</span>
-            <div className="mt-2">
-              <small className="text-muted">{getTimeAgo(job.createdAt)}</small>
-            </div>
           </div>
         </div>
-        
-        <div className="mb-3">
-          <div className="d-flex align-items-center mb-2">
-            <i className="bi bi-geo-alt me-2 text-primary"></i>
-            <span>{job.location}</span>
-          </div>
-          {job.salary && (
-            <div className="d-flex align-items-center">
-              <i className="bi bi-currency-dollar me-2 text-primary"></i>
-              <span>{job.salary}</span>
-            </div>
-          )}
+        <h5 className="card-title">{job.title}</h5>
+        <p className="card-subtitle text-muted mb-3">{job.company}</p>
+        <div className="d-flex align-items-center mb-1">
+          <i className="bi bi-geo-alt text-primary me-2"></i>
+          <span>{job.location}</span>
+        </div>
+        <div className="d-flex align-items-center mb-3">
+          <i className="bi bi-currency-dollar text-primary me-2"></i>
+          <span>{job.salary}</span>
         </div>
         
-        <p className="card-text mb-3">
-          {truncateDescription(job.description)}
-        </p>
+        {job.tags && job.tags.length > 0 && (
+          <div className="d-flex flex-wrap gap-1 mb-3">
+            {job.tags.map((tag, index) => (
+              <span key={index} className="badge bg-light text-dark">{tag}</span>
+            ))}
+          </div>
+        )}
         
-        <div className="d-flex mt-auto pt-3 border-top">
-          <Link to={`/jobs/${job._id}`} className="btn btn-primary flex-grow-1">
-            View Details
-          </Link>
-          
-          <button 
-            className={`btn ms-2 ${saved ? 'btn-tertiary' : 'btn-outline-secondary'}`}
-            onClick={() => onSave && onSave(job._id)}
-            title={saved ? "Saved" : "Save for later"}
-          >
-            <i className={`bi ${saved ? 'bi-bookmark-fill' : 'bi-bookmark'}`}></i>
-          </button>
+        <div className="d-flex justify-content-between align-items-center mt-auto">
+          <small className="text-muted">{getTimeAgo(job.createdAt)}</small>
+          <div className="d-flex gap-2">
+            {onSave && (
+              <button 
+                className={`btn btn-sm ${saved ? 'btn-outline-primary active' : 'btn-outline-secondary'}`}
+                onClick={() => onSave(job._id || job.id)}
+                title={saved ? "Saved" : "Save for later"}
+              >
+                <i className={`bi ${saved ? 'bi-bookmark-fill' : 'bi-bookmark'}`}></i>
+              </button>
+            )}
+            <Link to={`/jobs/${job._id || job.id}`} className="btn btn-primary">
+              Apply Now
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -106,14 +93,16 @@ const JobCard = ({ job, saved, onSave }) => {
 
 JobCard.propTypes = {
   job: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
+    _id: PropTypes.string,
+    id: PropTypes.string,
     title: PropTypes.string.isRequired,
     company: PropTypes.string.isRequired,
     location: PropTypes.string.isRequired,
     jobType: PropTypes.string.isRequired,
     salary: PropTypes.string,
-    description: PropTypes.string,
-    createdAt: PropTypes.string
+    tags: PropTypes.arrayOf(PropTypes.string),
+    createdAt: PropTypes.string,
+    companyLogo: PropTypes.string
   }).isRequired,
   saved: PropTypes.bool,
   onSave: PropTypes.func
@@ -121,7 +110,7 @@ JobCard.propTypes = {
 
 JobCard.defaultProps = {
   saved: false,
-  onSave: () => {}
+  onSave: null
 };
 
 export default JobCard;
