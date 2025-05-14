@@ -27,15 +27,16 @@ const PostJobPage = () => {
     jobType: Yup.string()
       .oneOf(['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote'], 'Invalid job type')
       .required('Job type is required'),
-    salary: Yup.string()
-      .matches(/^(\$\d{1,3}(,\d{3})*(\.\d+)?\s*(-|to)\s*\$\d{1,3}(,\d{3})*(\.\d+)?)$|^(\$\d{1,3}(,\d{3})*(\.\d+)?)$/, 'Please enter a valid salary format (e.g., $50,000 or $50,000 - $70,000)')
+    salary: Yup.number()
+      .min(1, 'Salary must be at least $1')
+      .max(70000, 'Salary cannot exceed $70,000')
       .nullable(),
     description: Yup.string()
-      .min(50, 'Description must be at least 50 characters')
+      .min(10, 'Description must be at least 10 characters')
       .max(2000, 'Description cannot exceed 2000 characters')
       .required('Description is required'),
     requirements: Yup.string()
-      .min(50, 'Requirements must be at least 50 characters')
+      .min(10, 'Requirements must be at least 10 characters')
       .max(2000, 'Requirements cannot exceed 2000 characters')
       .required('Requirements are required'),
     contactEmail: Yup.string()
