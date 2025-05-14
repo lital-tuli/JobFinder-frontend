@@ -90,30 +90,30 @@ const AppliedJobsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {appliedJobs.map((application) => (
-                  <tr key={application._id}>
-                    <td>
-                      <Link to={`/jobs/${application.job._id}`} className="text-decoration-none">
-                        {application.job.title}
-                      </Link>
-                    </td>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <div className="company-logo bg-light rounded p-2 me-2">
-                          <i className="bi bi-building fs-5 text-primary"></i>
-                        </div>
-                        <span>{application.job.company}</span>
-                      </div>
-                    </td>
+  {appliedJobs.map((application, index) => (
+    <tr key={application._id || index}>
+    <td>
+      <Link to={`/jobs/${application.job?._id || application._id}`} className="text-decoration-none">
+        {application.job?.title || 'Job information unavailable'}
+      </Link>
+    </td>
+    <td>
+      <div className="d-flex align-items-center">
+        <div className="company-logo bg-light rounded p-2 me-2">
+          <i className="bi bi-building fs-5 text-primary"></i>
+        </div>
+        <span>{application.job?.company || 'Company information unavailable'}</span>
+      </div>
+    </td>
                     <td>{formatDate(application.appliedAt || application.createdAt)}</td>
                     <td>
-                      <span className={`badge ${getStatusBadgeClass(application.status)}`}>
+                      <span className={`badge ${getStatusBadgeClass(application.status || 'Pending')}`}>
                         {application.status || 'Pending'}
                       </span>
                     </td>
                     <td>
                       <div className="btn-group">
-                        <Link to={`/jobs/${application.job._id}`} className="btn btn-sm btn-outline-primary">
+                        <Link to={`/jobs/${application.job?._id || application._id}`} className="btn btn-sm btn-outline-primary">
                           View Job
                         </Link>
                         {application.status === 'Interview' && (
