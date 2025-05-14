@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
@@ -16,6 +15,12 @@ import SavedJobsPage from './pages/SavedJobsPage';
 import AppliedJobsPage from './pages/AppliedJobsPage';
 import MyListingsPage from './pages/MyListingsPage';
 import NotFoundPage from './pages/NotFoundPage';
+
+// New pages
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -117,6 +122,12 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          
+          {/* Informational Pages */}
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
           
           {/* 404 - Not Found */}
           <Route path="*" element={<NotFoundPage />} />

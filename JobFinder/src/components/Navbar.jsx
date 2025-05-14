@@ -1,4 +1,3 @@
-// src/components/Navbar.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -81,6 +80,15 @@ const Navbar = () => {
                 onClick={closeMobileMenu}
               >
                 Salaries
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link 
+                className={`nav-link ${isActive('/about')}`} 
+                to="/about" 
+                onClick={closeMobileMenu}
+              >
+                About Us
               </Link>
             </li>
             {isAuthenticated && user?.role === 'recruiter' && (

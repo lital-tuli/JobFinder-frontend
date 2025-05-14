@@ -1,4 +1,3 @@
-// src/pages/AboutPage.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -6,114 +5,105 @@ const AboutPage = () => {
   return (
     <div className="container py-5">
       <div className="row mb-5">
-        <div className="col-lg-8 mx-auto text-center">
-          <h1 className="display-4 fw-bold mb-4">About <span className="text-primary">Job</span>Finder</h1>
-          <p className="lead mb-4">
-            Connecting talented professionals with their dream careers since 2024
+        <div className="col-12 text-center">
+          <h1 className="fw-bold mb-3">About <span className="text-primary">Job</span>Finder</h1>
+          <p className="lead text-muted">Connecting talented professionals with top employers since 2023</p>
+        </div>
+      </div>
+
+      {/* Mission Section */}
+      <div className="row mb-5">
+        <div className="col-md-6 mb-4 mb-md-0">
+          <img 
+            src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+            alt="Team working together" 
+            className="img-fluid rounded shadow-sm"
+          />
+        </div>
+        <div className="col-md-6 d-flex flex-column justify-content-center">
+          <h2 className="fw-bold mb-3">Our Mission</h2>
+          <p className="mb-3">
+            At JobFinder, we believe that finding the right job shouldn't be a job itself. Our mission is to simplify 
+            the job search process by connecting talented individuals with companies that value their skills and potential.
+          </p>
+          <p>
+            We're dedicated to creating a platform that removes barriers between job seekers and employers, 
+            making the hiring process more efficient, transparent, and enjoyable for everyone involved.
           </p>
         </div>
       </div>
 
-      {/* Our Mission Section */}
+      {/* Story Section */}
+      <div className="row mb-5 flex-md-row-reverse">
+        <div className="col-md-6 mb-4 mb-md-0">
+          <img 
+            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+            alt="Startup journey" 
+            className="img-fluid rounded shadow-sm"
+          />
+        </div>
+        <div className="col-md-6 d-flex flex-column justify-content-center">
+          <h2 className="fw-bold mb-3">Our Story</h2>
+          <p className="mb-3">
+            JobFinder was founded in 2023 by a team of professionals who experienced firsthand the challenges of 
+            the job search process. After countless hours spent on various job platforms, our founders realized 
+            there had to be a better way.
+          </p>
+          <p>
+            What began as a simple idea to improve job searching has grown into a comprehensive platform 
+            trusted by thousands of job seekers and hundreds of companies across the globe.
+          </p>
+        </div>
+      </div>
+
+      {/* Values Section */}
       <div className="row mb-5">
-        <div className="col-lg-8 mx-auto">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body p-5">
-              <h2 className="fw-bold mb-4">Our Mission</h2>
-              <p className="mb-4">
-                At JobFinder, our mission is to bridge the gap between talent and opportunity. We believe that the right job can transform lives, and the right candidate can transform companies. 
-              </p>
-              <p>
-                We're committed to creating a platform that makes the job search process more efficient, transparent, and rewarding for both job seekers and employers. By leveraging technology and human expertise, we strive to create meaningful connections that drive careers and businesses forward.
+        <div className="col-12 text-center mb-4">
+          <h2 className="fw-bold">Our Values</h2>
+          <p className="text-muted">The principles that guide everything we do</p>
+        </div>
+
+        <div className="col-md-4 mb-4">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body p-4 text-center">
+              <div className="rounded-circle bg-primary-light mx-auto mb-3 d-flex align-items-center justify-content-center" style={{width: "80px", height: "80px"}}>
+                <i className="bi bi-star text-primary fs-2"></i>
+              </div>
+              <h3 className="fw-bold h5 mb-3">Excellence</h3>
+              <p className="text-muted mb-0">
+                We strive for excellence in everything we do, from the user experience on our platform to 
+                the quality of opportunities we connect people with.
               </p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Our Story Section */}
-      <div className="row mb-5">
-        <div className="col-lg-10 mx-auto">
-          <h2 className="fw-bold mb-4 text-center">Our Story</h2>
-          <div className="row align-items-center">
-            <div className="col-md-6 mb-4 mb-md-0">
-              <div className="bg-light p-4 rounded-3 h-100">
-                <p>
-                  JobFinder was founded in 2024 by a team of technology and HR professionals who saw firsthand the challenges faced by both job seekers and employers in the digital age.
-                </p>
-                <p>
-                  Despite the abundance of job boards and recruitment platforms, we noticed that many talented individuals struggled to find positions that truly matched their skills and aspirations, while companies faced difficulties identifying candidates who would thrive in their unique culture and environment.
-                </p>
-                <p>
-                  This gap inspired us to build JobFinder – a platform that goes beyond simple job listings to create meaningful connections between professionals and organizations.
-                </p>
+        <div className="col-md-4 mb-4">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body p-4 text-center">
+              <div className="rounded-circle bg-primary-light mx-auto mb-3 d-flex align-items-center justify-content-center" style={{width: "80px", height: "80px"}}>
+                <i className="bi bi-shield-check text-primary fs-2"></i>
               </div>
-            </div>
-            <div className="col-md-6">
-              <div className="bg-primary-light p-4 rounded-3 h-100">
-                <p>
-                  Since our launch, we've helped thousands of job seekers find fulfilling careers and enabled companies to build dynamic, diverse teams that drive innovation and growth.
-                </p>
-                <p>
-                  Our platform continuously evolves based on feedback from our community and advances in technology, but our core mission remains the same: to connect the right people with the right opportunities at the right time.
-                </p>
-                <p>
-                  Today, JobFinder stands as a trusted resource for job seekers and employers alike, committed to transforming the way the world works by making job discovery and talent acquisition more efficient, personal, and rewarding.
-                </p>
-              </div>
+              <h3 className="fw-bold h5 mb-3">Integrity</h3>
+              <p className="text-muted mb-0">
+                We operate with complete transparency and honesty, earning the trust of both job seekers 
+                and employers through our ethical practices.
+              </p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Our Values Section */}
-      <div className="row mb-5">
-        <div className="col-lg-10 mx-auto">
-          <h2 className="fw-bold mb-4 text-center">Our Values</h2>
-          <div className="row g-4">
-            <div className="col-md-6 col-lg-3">
-              <div className="card h-100 border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="category-icon bg-primary-light rounded-circle mx-auto mb-3">
-                    <i className="bi bi-lightbulb text-primary fs-4"></i>
-                  </div>
-                  <h5 className="card-title">Innovation</h5>
-                  <p className="card-text">We constantly seek better ways to connect talent with opportunity through technology and creativity.</p>
-                </div>
+        <div className="col-md-4 mb-4">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body p-4 text-center">
+              <div className="rounded-circle bg-primary-light mx-auto mb-3 d-flex align-items-center justify-content-center" style={{width: "80px", height: "80px"}}>
+                <i className="bi bi-people text-primary fs-2"></i>
               </div>
-            </div>
-            <div className="col-md-6 col-lg-3">
-              <div className="card h-100 border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="category-icon bg-primary-light rounded-circle mx-auto mb-3">
-                    <i className="bi bi-check2-circle text-primary fs-4"></i>
-                  </div>
-                  <h5 className="card-title">Integrity</h5>
-                  <p className="card-text">We maintain the highest standards of honesty, transparency, and ethical behavior in all our interactions.</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-6 col-lg-3">
-              <div className="card h-100 border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="category-icon bg-primary-light rounded-circle mx-auto mb-3">
-                    <i className="bi bi-people text-primary fs-4"></i>
-                  </div>
-                  <h5 className="card-title">Inclusivity</h5>
-                  <p className="card-text">We celebrate diversity and create a platform that serves all job seekers and employers equally.</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-6 col-lg-3">
-              <div className="card h-100 border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="category-icon bg-primary-light rounded-circle mx-auto mb-3">
-                    <i className="bi bi-graph-up-arrow text-primary fs-4"></i>
-                  </div>
-                  <h5 className="card-title">Impact</h5>
-                  <p className="card-text">We measure our success by the positive difference we make in people's careers and companies' growth.</p>
-                </div>
-              </div>
+              <h3 className="fw-bold h5 mb-3">Community</h3>
+              <p className="text-muted mb-0">
+                We believe in the power of community and strive to create an inclusive platform where everyone 
+                has access to opportunities regardless of background.
+              </p>
             </div>
           </div>
         </div>
@@ -121,80 +111,102 @@ const AboutPage = () => {
 
       {/* Team Section */}
       <div className="row mb-5">
-        <div className="col-lg-10 mx-auto">
-          <h2 className="fw-bold mb-4 text-center">Our Leadership Team</h2>
-          <div className="row g-4">
-            <div className="col-md-6 col-lg-3">
-              <div className="card border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="avatar bg-primary-light text-primary mx-auto rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px', fontSize: '2rem'}}>
-                    JD
-                  </div>
-                  <h5 className="card-title">Jane Doe</h5>
-                  <p className="text-muted mb-3">CEO & Co-Founder</p>
-                  <p className="card-text small">With over 15 years in HR tech, Jane leads our vision and strategy with passion and expertise.</p>
-                </div>
+        <div className="col-12 text-center mb-4">
+          <h2 className="fw-bold">Our Team</h2>
+          <p className="text-muted">The people behind JobFinder</p>
+        </div>
+
+        <div className="col-md-3 col-sm-6 mb-4">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body p-4 text-center">
+              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+                <img 
+                  src="https://randomuser.me/api/portraits/men/32.jpg" 
+                  alt="CEO" 
+                  className="img-fluid"
+                />
               </div>
+              <h5 className="fw-bold mb-1">Alex Johnson</h5>
+              <p className="text-primary small mb-2">CEO & Co-Founder</p>
+              <p className="text-muted small mb-0">
+                Former HR executive with a passion for improving the hiring experience.
+              </p>
             </div>
-            <div className="col-md-6 col-lg-3">
-              <div className="card border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="avatar bg-primary-light text-primary mx-auto rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px', fontSize: '2rem'}}>
-                    JS
-                  </div>
-                  <h5 className="card-title">John Smith</h5>
-                  <p className="text-muted mb-3">CTO & Co-Founder</p>
-                  <p className="card-text small">John's technical expertise and innovation drive our platform's capabilities forward.</p>
-                </div>
+          </div>
+        </div>
+
+        <div className="col-md-3 col-sm-6 mb-4">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body p-4 text-center">
+              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+                <img 
+                  src="https://randomuser.me/api/portraits/women/44.jpg" 
+                  alt="CTO" 
+                  className="img-fluid"
+                />
               </div>
+              <h5 className="fw-bold mb-1">Sarah Chen</h5>
+              <p className="text-primary small mb-2">CTO & Co-Founder</p>
+              <p className="text-muted small mb-0">
+                Tech innovator focused on creating intuitive digital experiences.
+              </p>
             </div>
-            <div className="col-md-6 col-lg-3">
-              <div className="card border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="avatar bg-primary-light text-primary mx-auto rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px', fontSize: '2rem'}}>
-                    MC
-                  </div>
-                  <h5 className="card-title">Maria Chen</h5>
-                  <p className="text-muted mb-3">Head of Product</p>
-                  <p className="card-text small">Maria ensures our platform delivers exceptional experiences for all users.</p>
-                </div>
+          </div>
+        </div>
+
+        <div className="col-md-3 col-sm-6 mb-4">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body p-4 text-center">
+              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+                <img 
+                  src="https://randomuser.me/api/portraits/men/75.jpg" 
+                  alt="Head of Operations" 
+                  className="img-fluid"
+                />
               </div>
+              <h5 className="fw-bold mb-1">Michael Rivera</h5>
+              <p className="text-primary small mb-2">Head of Operations</p>
+              <p className="text-muted small mb-0">
+                Ensures JobFinder runs smoothly for all our users every day.
+              </p>
             </div>
-            <div className="col-md-6 col-lg-3">
-              <div className="card border-0 shadow-sm hover-lift">
-                <div className="card-body text-center p-4">
-                  <div className="avatar bg-primary-light text-primary mx-auto rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px', fontSize: '2rem'}}>
-                    RJ
-                  </div>
-                  <h5 className="card-title">Robert Johnson</h5>
-                  <p className="text-muted mb-3">Chief Marketing Officer</p>
-                  <p className="card-text small">Robert connects our platform with job seekers and employers worldwide.</p>
-                </div>
+          </div>
+        </div>
+
+        <div className="col-md-3 col-sm-6 mb-4">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body p-4 text-center">
+              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+                <img 
+                  src="https://randomuser.me/api/portraits/women/65.jpg" 
+                  alt="Head of Marketing" 
+                  className="img-fluid"
+                />
               </div>
+              <h5 className="fw-bold mb-1">Emily Taylor</h5>
+              <p className="text-primary small mb-2">Head of Marketing</p>
+              <p className="text-muted small mb-0">
+                Creative mind behind our outreach and community engagement.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       {/* CTA Section */}
-      <div className="row">
-        <div className="col-lg-10 mx-auto">
-          <div className="card bg-primary text-white border-0 shadow">
-            <div className="card-body p-5 text-center">
-              <h2 className="fw-bold mb-3">Join Our Community</h2>
-              <p className="lead mb-4">
-                Whether you're looking for your next opportunity or your next star employee, JobFinder is here to help.
-              </p>
-              <div className="d-flex justify-content-center gap-3 flex-wrap">
-                <Link to="/register" className="btn btn-light text-primary fw-bold">
-                  Create an Account
-                </Link>
-                <Link to="/contact" className="btn btn-outline-light">
-                  Contact Us
-                </Link>
-              </div>
-            </div>
-          </div>
+      <div className="bg-primary text-white p-5 rounded-3 text-center">
+        <h2 className="fw-bold mb-3">Join Our Journey</h2>
+        <p className="lead mb-4">
+          Whether you're looking for your next career move or searching for top talent, 
+          JobFinder is here to make the process simpler and more effective.
+        </p>
+        <div className="d-flex justify-content-center gap-3">
+          <Link to="/register" className="btn btn-light px-4 py-2 text-primary fw-bold">
+            Get Started
+          </Link>
+          <Link to="/contact" className="btn btn-outline-light px-4 py-2">
+            Contact Us
+          </Link>
         </div>
       </div>
     </div>
