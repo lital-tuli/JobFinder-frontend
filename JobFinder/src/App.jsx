@@ -15,13 +15,13 @@ import SavedJobsPage from './pages/SavedJobsPage';
 import AppliedJobsPage from './pages/AppliedJobsPage';
 import MyListingsPage from './pages/MyListingsPage';
 import NotFoundPage from './pages/NotFoundPage';
-
-// New pages
+import FAQ from './pages/FAQ';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import Sandbox from './components/Sandbox';
+import Companies from './pages/Companies';
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
 
@@ -142,6 +142,10 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/FAQ" element={<FAQ/>} />
+
+
           
           {/* 404 - Not Found */}
           <Route path="*" element={<NotFoundPage />} />
