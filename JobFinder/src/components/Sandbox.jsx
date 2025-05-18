@@ -10,7 +10,8 @@ const Sandbox = () => {
     totalUsers: 0,
     totalJobs: 0,
     totalApplications: 0,
-    activeJobs: 0
+    activeJobs: 0,
+    totalAdmins: 0
   });
   const [users, setUsers] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -37,6 +38,11 @@ const Sandbox = () => {
     maxJobsPerRecruiter: 10
   });
 
+  // State for role change modal
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [newRole, setNewRole] = useState('');
+
   useEffect(() => {
     if (user?.isAdmin) {
       fetchStats();
@@ -59,7 +65,8 @@ const Sandbox = () => {
         totalUsers: usersData?.length || 0,
         totalJobs: jobsData?.length || 0,
         activeJobs: jobsData?.filter(job => job.isActive)?.length || 0,
-        totalApplications: jobsData?.reduce((acc, job) => acc + (job.applicants?.length || 0), 0) || 0
+        totalApplications: jobsData?.reduce((acc, job) => acc + (job.applicants?.length || 0), 0) || 0,
+        totalAdmins: usersData?.filter(u => u.role === 'admin')?.length || 0
       });
     } catch {
       setError('Failed to fetch admin statistics');
@@ -99,11 +106,21 @@ const Sandbox = () => {
     }
   };
 
-  const handleUserRoleChange = async (userId, newRole) => {
+  const handleOpenRoleModal = (user) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setShowRoleModal(true);
+  };
+
+  const handleRoleChange = async () => {
+    if (!selectedUser || !newRole) return;
+
     try {
       setLoading(true);
-      await userService.updateUserRole(userId, newRole);
-      setSuccessMessage('User role updated successfully!');
+      await userService.updateUserRole(selectedUser._id, newRole);
+      setSuccessMessage(`User role updated to ${newRole} successfully!`);
+      setShowRoleModal(false);
+      setSelectedUser(null);
       fetchStats();
     } catch (err) {
       setError('Failed to update user role: ' + (err.error || err.message));
@@ -118,6 +135,15 @@ const Sandbox = () => {
       [setting]: !prev[setting]
     }));
     setSuccessMessage(`${setting} ${systemSettings[setting] ? 'disabled' : 'enabled'} successfully!`);
+  };
+
+  const getRoleBadgeClass = (role) => {
+    switch(role) {
+      case 'admin': return 'bg-danger';
+      case 'recruiter': return 'bg-primary';
+      case 'jobseeker': return 'bg-success';
+      default: return 'bg-secondary';
+    }
   };
 
   // Clear messages after 5 seconds
@@ -271,7 +297,20 @@ const Sandbox = () => {
             </div>
 
             <div className="row">
-              <div className="col-12">
+              <div className="col-md-4 mb-4">
+                <div className="card bg-danger text-white">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between">
+                      <div>
+                        <h3 className="mb-0">{stats.totalAdmins}</h3>
+                        <p className="mb-0">Admin Users</p>
+                      </div>
+                      <i className="bi bi-shield-check fs-1"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-8">
                 <div className="card">
                   <div className="card-header">
                     <h5 className="mb-0">Quick Actions</h5>
@@ -325,28 +364,35 @@ const Sandbox = () => {
                           <th>Name</th>
                           <th>Email</th>
                           <th>Role</th>
+                          <th>Status</th>
                           <th>Joined</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {users.slice(0, 10).map(user => (
-                          <tr key={user._id}>
-                            <td>{user.name?.first} {user.name?.last}</td>
-                            <td>{user.email}</td>
+                        {users.slice(0, 10).map(userItem => (
+                          <tr key={userItem._id}>
+                            <td>{userItem.name?.first} {userItem.name?.last}</td>
+                            <td>{userItem.email}</td>
                             <td>
-                              <span className={`badge ${user.role === 'recruiter' ? 'bg-primary' : 'bg-success'}`}>
-                                {user.role}
+                              <span className={`badge ${getRoleBadgeClass(userItem.role)}`}>
+                                {userItem.role.charAt(0).toUpperCase() + userItem.role.slice(1)}
                               </span>
                             </td>
-                            <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                            <td>
+                              <span className={`badge ${userItem.isActive !== false ? 'bg-success' : 'bg-secondary'}`}>
+                                {userItem.isActive !== false ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td>{new Date(userItem.createdAt).toLocaleDateString()}</td>
                             <td>
                               <div className="btn-group">
                                 <button 
                                   className="btn btn-sm btn-outline-primary"
-                                  onClick={() => handleUserRoleChange(user._id, user.role === 'recruiter' ? 'jobseeker' : 'recruiter')}
+                                  onClick={() => handleOpenRoleModal(userItem)}
+                                  disabled={userItem._id === user._id}
                                 >
-                                  Toggle Role
+                                  Change Role
                                 </button>
                               </div>
                             </td>
@@ -562,6 +608,83 @@ const Sandbox = () => {
           </div>
         )}
       </div>
+
+      {/* Role Change Modal */}
+      {showRoleModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Change User Role</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowRoleModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {selectedUser && (
+                  <>
+                    <p>
+                      <strong>User:</strong> {selectedUser.name?.first} {selectedUser.name?.last} 
+                      ({selectedUser.email})
+                    </p>
+                    <p>
+                      <strong>Current Role:</strong> 
+                      <span className={`badge ms-2 ${getRoleBadgeClass(selectedUser.role)}`}>
+                        {selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}
+                      </span>
+                    </p>
+                    <div className="mb-3">
+                      <label className="form-label">Select New Role:</label>
+                      <select 
+                        className="form-select"
+                        value={newRole}
+                        onChange={(e) => setNewRole(e.target.value)}
+                      >
+                        <option value="jobseeker">Job Seeker</option>
+                        <option value="recruiter">Recruiter</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                    <div className="alert alert-warning">
+                      <small>
+                        <i className="bi bi-exclamation-triangle me-1"></i>
+                        Changing a user's role will affect their permissions and access to features.
+                        {newRole === 'admin' && ' Making someone an admin will give them full system access.'}
+                      </small>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowRoleModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={handleRoleChange}
+                  disabled={loading || newRole === selectedUser?.role}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Role'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
