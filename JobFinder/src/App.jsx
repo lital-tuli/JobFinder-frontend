@@ -21,7 +21,7 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
-
+import Sandbox from './components/Sandbox';
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
 
@@ -41,7 +41,11 @@ function App() {
       return <Navigate to="/login" replace />;
     }
 
-    if (roleRequired && user?.role !== roleRequired) {
+    if (roleRequired === 'admin' && !user?.isAdmin) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+
+    if (roleRequired && roleRequired !== 'admin' && user?.role !== roleRequired) {
       return <Navigate to="/unauthorized" replace />;
     }
 
@@ -119,6 +123,16 @@ function App() {
             element={
               <ProtectedRoute roleRequired="recruiter">
                 <MyListingsPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Admin specific routes */}
+          <Route 
+            path="/admin/sandbox" 
+            element={
+              <ProtectedRoute roleRequired="admin">
+                <Sandbox />
               </ProtectedRoute>
             } 
           />

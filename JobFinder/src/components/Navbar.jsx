@@ -102,6 +102,17 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
+            {isAuthenticated && user?.isAdmin && (
+              <li className="nav-item">
+                <Link 
+                  className={`nav-link ${isActive('/admin/sandbox')}`} 
+                  to="/admin/sandbox"
+                  onClick={closeMobileMenu}
+                >
+                  <i className="bi bi-gear me-1"></i>Admin
+                </Link>
+              </li>
+            )}
           </ul>
           
           <div className="d-flex align-items-center">

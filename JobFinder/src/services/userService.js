@@ -204,6 +204,51 @@ const getUserIdFromToken = (token) => {
   }
 };
 
+// Get all users (admin only)
+export const getAllUsers = async () => {
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+    
+    const response = await api.get('/admin/users', {
+      headers: {
+        "x-auth-token": token
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Update user role (admin only)
+export const updateUserRole = async (userId, newRole) => {
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+    
+    const response = await api.put(`/admin/users/${userId}/role`, 
+      { role: newRole },
+      {
+        headers: {
+          "x-auth-token": token
+        }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export default {
   login,
   register,
@@ -212,5 +257,8 @@ export default {
   checkAuth,
   logout,
   getSavedJobs,
-  getAppliedJobs
+  getAppliedJobs,
+  getAllUsers,
+  updateUserRole
 };
+
