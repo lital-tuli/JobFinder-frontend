@@ -1,20 +1,44 @@
-// src/pages/HomePage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import JobCard from '../components/JobCard';
+import jobService from '../services/jobService';
 
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState('');
+  const [featuredJobs, setFeaturedJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+
+  // Fetch real featured jobs from the API
+  useEffect(() => {
+    const fetchFeaturedJobs = async () => {
+      try {
+        setLoading(true);
+        const jobs = await jobService.getAllJobs();
+        // Take the 3 most recent jobs as featured
+        setFeaturedJobs(jobs.slice(0, 3));
+      } catch (error) {
+        console.error('Failed to fetch featured jobs:', error);
+        setFeaturedJobs([]); // Set empty array if fetch fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedJobs();
+  }, []);
 
   // Handle search form submission
   const handleSearch = (e) => {
     e.preventDefault();
     // Navigate to jobs page with search params
-    navigate(`/jobs?search=${searchTerm}&location=${location}`);
+    const params = new URLSearchParams();
+    if (searchTerm) params.append('search', searchTerm);
+    if (location) params.append('location', location);
+    navigate(`/jobs?${params.toString()}`);
   };
 
   return (
@@ -122,48 +146,27 @@ const HomePage = () => {
               View all jobs <i className="bi bi-arrow-right"></i>
             </Link>
           </div>
-          <div className="row">
-            {/* Sample data for Featured Jobs */}
-            {[
-              {
-                id: '1',
-                title: 'Senior Frontend Developer',
-                company: 'TechCorp Inc.',
-                location: 'San Francisco, CA (Remote)',
-                salary: '$120K - $150K',
-                jobType: 'Full-time',
-                tags: ['React', 'TypeScript', 'Remote'],
-                createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-                companyLogo: 'building'
-              },
-              {
-                id: '2',
-                title: 'Product Designer',
-                company: 'DesignHub',
-                location: 'New York, NY (Hybrid)',
-                salary: '$90K - $115K',
-                jobType: 'Hybrid',
-                tags: ['UI/UX', 'Figma', 'Hybrid'],
-                createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-                companyLogo: 'palette'
-              },
-              {
-                id: '3',
-                title: 'Backend Engineer',
-                company: 'Serverless Systems',
-                location: 'Remote',
-                salary: '$130K - $160K',
-                jobType: 'Remote',
-                tags: ['Node.js', 'AWS', 'Remote'],
-                createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-                companyLogo: 'server'
-              }
-            ].map((job) => (
-              <div className="col-lg-4 mb-4" key={job.id}>
-                <JobCard job={job} />
+          
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : featuredJobs.length > 0 ? (
+            <div className="row">
+              {featuredJobs.map((job) => (
+                <div className="col-lg-4 mb-4" key={job._id}>
+                  <JobCard job={job} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted">No featured jobs available at the moment.</p>
+              <Link to="/jobs" className="btn btn-primary">Browse All Jobs</Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -185,7 +188,7 @@ const HomePage = () => {
               { name: 'Customer Service', icon: 'headset', count: 88 }
             ].map((category, index) => (
               <div className="col-md-4 mb-4" key={index}>
-                <Link to={`/jobs?category=${category.name.toLowerCase()}`} className="card h-100 shadow-sm border-0 text-decoration-none hover-lift">
+                <Link to={`/jobs?search=${category.name.toLowerCase()}`} className="card h-100 shadow-sm border-0 text-decoration-none hover-lift">
                   <div className="card-body">
                     <div className="d-flex align-items-center">
                       <div className="category-icon bg-primary-light rounded-circle p-3 me-3">
