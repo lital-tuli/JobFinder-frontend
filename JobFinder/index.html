@@ -2,15 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Load Bootstrap Icons from CDN to avoid local file issues -->
+    
+    <title>JobFinder - Find Your Dream Job Today</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="JobFinder connects talented professionals with top companies. Find your dream job, post job listings, and advance your career with JobFinder." />
+    <meta name="keywords" content="jobs, careers, employment, job search, hiring, recruitment, job portal" />
+    <meta name="author" content="JobFinder Team" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="JobFinder - Find Your Dream Job Today" />
+    <meta property="og:description" content="Connect with top employers and find your perfect career match." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://jobfinder.com" />
+    <meta property="og:image" content="/og-image.png" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="JobFinder - Find Your Dream Job Today" />
+    <meta name="twitter:description" content="Connect with top employers and find your perfect career match." />
+    <meta name="twitter:image" content="/twitter-image.png" />
+    
+    <!-- Load Bootstrap Icons from CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <title>JobFinder</title>
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/src/assets/custom.css" as="style">
   </head>
   <body>
     <div id="root"></div>
