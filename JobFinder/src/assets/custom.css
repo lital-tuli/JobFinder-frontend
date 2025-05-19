@@ -261,4 +261,88 @@ h1, h2, h3, h4, h5, h6 {
   .card-body {
     padding: 1.25rem;
   }
+  
+  /* Mobile navbar fixes */
+  .navbar-nav {
+    text-align: center;
+  }
+  
+  .navbar-nav .nav-link {
+    padding: 0.75rem 1rem !important;
+  }
+  
+  /* Mobile form fixes */
+  .form-control, .form-select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Mobile table responsive */
+  .table-responsive {
+    font-size: 0.9rem;
+  }
+  
+  /* Mobile card spacing */
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Mobile button stack */
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group .btn {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Mobile search forms */
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .input-group .form-control {
+    margin-bottom: 0.5rem;
+    border-radius: 0.25rem !important;
+  }
+  
+  .input-group .btn {
+    border-radius: 0.25rem !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .navbar-nav .nav-link {
+    padding: 0.5rem 0.75rem !important;
+  }
+  
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 575.98px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+  
+  .lead {
+    font-size: 1.1rem;
+  }
+  
+  /* Mobile job cards */
+  .job-card .card-body {
+    padding: 1rem;
+  }
+  
+  /* Mobile profile sections */
+  .profile-section {
+    margin-bottom: 2rem;
+  }
 }

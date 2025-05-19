@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -22,6 +23,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import Sandbox from './components/Sandbox';
 import Companies from './pages/Companies';
+
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
 
@@ -63,95 +65,95 @@ function App() {
   }
 
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/jobs" element={<JobListPage />} />
-          <Route path="/jobs/:id" element={<JobDetailsPage />} />
-          
-          {/* Authentication routes */}
-          <Route 
-            path="/login" 
-            element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} 
-          />
-          <Route 
-            path="/register" 
-            element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />} 
-          />
-          
-          {/* Protected routes for all authenticated users */}
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Job seeker specific routes */}
-          <Route 
-            path="/saved-jobs" 
-            element={
-              <ProtectedRoute roleRequired="jobseeker">
-                <SavedJobsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/applied-jobs" 
-            element={
-              <ProtectedRoute roleRequired="jobseeker">
-                <AppliedJobsPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Recruiter specific routes */}
-          <Route 
-            path="/post-job" 
-            element={
-              <ProtectedRoute roleRequired="recruiter">
-                <PostJobPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-listings" 
-            element={
-              <ProtectedRoute roleRequired="recruiter">
-                <MyListingsPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Admin specific routes */}
-          <Route 
-            path="/admin/sandbox" 
-            element={
-              <ProtectedRoute roleRequired="admin">
-                <Sandbox />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Informational Pages */}
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms" element={<TermsOfServicePage />} />
-          <Route path="/companies" element={<Companies />} />
-          <Route path="/FAQ" element={<FAQ/>} />
+    <ErrorBoundary>
+      <Router>
+        <Layout>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/jobs" element={<JobListPage />} />
+            <Route path="/jobs/:id" element={<JobDetailsPage />} />
+            
+            {/* Authentication routes */}
+            <Route 
+              path="/login" 
+              element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} 
+            />
+            <Route 
+              path="/register" 
+              element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />} 
+            />
+            
+            {/* Protected routes for all authenticated users */}
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Job seeker specific routes */}
+            <Route 
+              path="/saved-jobs" 
+              element={
+                <ProtectedRoute roleRequired="jobseeker">
+                  <SavedJobsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/applied-jobs" 
+              element={
+                <ProtectedRoute roleRequired="jobseeker">
+                  <AppliedJobsPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Recruiter specific routes */}
+            <Route 
+              path="/post-job" 
+              element={
+                <ProtectedRoute roleRequired="recruiter">
+                  <PostJobPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-listings" 
+              element={
+                <ProtectedRoute roleRequired="recruiter">
+                  <MyListingsPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin specific routes */}
+            <Route 
+              path="/admin/sandbox" 
+              element={
+                <ProtectedRoute roleRequired="admin">
+                  <Sandbox />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Informational Pages */}
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/companies" element={<Companies />} />
+            <Route path="/FAQ" element={<FAQ/>} />
 
-
-          
-          {/* 404 - Not Found */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Layout>
-    </Router>
+            {/* 404 - Not Found */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
