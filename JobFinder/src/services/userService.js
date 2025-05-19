@@ -23,9 +23,15 @@ const handleApiError = (error) => {
   throw { error: errorMessage };
 };
 
+
 // Login user
 export const login = async (email, password, rememberMe = false) => {
   try {
+    // Validate inputs
+    if (!email || !password) {
+      throw new Error("Email and password are required");
+    }
+
     const response = await api.post(`${USERS_URL}/login`, { email, password });
     const responseData = response.data;
     
@@ -33,8 +39,12 @@ export const login = async (email, password, rememberMe = false) => {
       // Store token based on remember me option
       if (rememberMe) {
         localStorage.setItem("token", responseData.token);
+        // Remove from session storage if it exists
+        sessionStorage.removeItem("token");
       } else {
         sessionStorage.setItem("token", responseData.token);
+        // Remove from local storage if it exists
+        localStorage.removeItem("token");
       }
     }
     
@@ -43,7 +53,7 @@ export const login = async (email, password, rememberMe = false) => {
     return handleApiError(error);
   }
 };
-
+    
 // Register user
 export const register = async (userData) => {
   try {
