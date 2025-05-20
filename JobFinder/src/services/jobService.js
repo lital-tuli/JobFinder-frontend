@@ -437,6 +437,29 @@ export const getJobStatistics = async () => {
     return handleApiError(error);
   }
 };
+// Toggle favorite status for a job
+const toggleFavoriteJob = async (jobId) => {
+  try {
+    const response = await api.post(`${JOBS_URL}/${jobId}/favorite`, {}, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Get user's favorite jobs
+const getFavoriteJobs = async () => {
+  try {
+    const response = await api.get(`/users/favorites`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
 
 export default {
   getAllJobs,
@@ -450,5 +473,7 @@ export default {
   filterJobs,
   paginateJobs,
   searchJobs,
-  getJobStatistics
+  getJobStatistics,
+  toggleFavoriteJob,
+  getFavoriteJobs
 };

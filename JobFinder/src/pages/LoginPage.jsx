@@ -1,5 +1,4 @@
-// src/pages/LoginPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -7,25 +6,57 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   
-  const { login } = useAuth();
+  const { login, authError, clearAuthError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from || '/';
 
+  // Clear auth errors when component unmounts or when form values change
+  useEffect(() => {
+    clearAuthError();
+    
+    return () => {
+      clearAuthError();
+    };
+  }, [email, password, clearAuthError]);
+
+  // Basic validation
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (!password) {
+      errors.password = 'Password is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     
     try {
       await login(email, password, rememberMe);
       navigate(from, { replace: true });
-    } catch (err) {
-      setError(err.error || 'Login failed. Please check your credentials.');
+    } catch {
+      // Authentication errors are handled in the AuthContext
+      // so we don't need to set them here
       setLoading(false);
     }
   };
@@ -41,9 +72,15 @@ const LoginPage = () => {
                 <p className="text-muted">Sign in to continue to JobFinder</p>
               </div>
               
-              {error && (
+              {authError && (
                 <div className="alert alert-danger" role="alert">
-                  {error}
+                  {authError}
+                </div>
+              )}
+              
+              {location.state?.registrationSuccess && (
+                <div className="alert alert-success" role="alert">
+                  {location.state.message || 'Registration successful! Please log in with your credentials.'}
                 </div>
               )}
               
@@ -52,27 +89,37 @@ const LoginPage = () => {
                   <label htmlFor="email" className="form-label">Email address</label>
                   <input
                     type="email"
-                    className="form-control"
+                    className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
+                  {formErrors.email && (
+                    <div className="invalid-feedback">
+                      {formErrors.email}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="mb-3">
                   <div className="d-flex justify-content-between">
                     <label htmlFor="password" className="form-label">Password</label>
-                    <a href="/forgot-password" className="small text-decoration-none">Forgot Password?</a>
+                    <Link to="/forgot-password" className="small text-decoration-none">Forgot Password?</Link>
                   </div>
                   <input
                     type="password"
-                    className="form-control"
+                    className={`form-control ${formErrors.password ? 'is-invalid' : ''}`}
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  {formErrors.password && (
+                    <div className="invalid-feedback">
+                      {formErrors.password}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="mb-4 form-check">
