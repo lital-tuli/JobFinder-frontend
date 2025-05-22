@@ -21,6 +21,7 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import SalariesPage from './pages/SalariesPage';
 import Sandbox from './components/Sandbox';
 import Companies from './pages/Companies';
 
@@ -146,7 +147,8 @@ function App() {
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/companies" element={<Companies />} />
-            <Route path="/FAQ" element={<FAQ/>} />
+            <Route path="/salaries" element={<SalariesPage />} />
+            <Route path="/faq" element={<FAQ />} />
 
             {/* 404 - Not Found */}
             <Route path="*" element={<NotFoundPage />} />
