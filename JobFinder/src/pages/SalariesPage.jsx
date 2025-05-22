@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import jobService from '../services/jobService';
 
@@ -14,80 +14,81 @@ const SalariesPage = () => {
   });
 
   useEffect(() => {
+    const fetchSalaryData = async () => {
+      try {
+        setLoading(true);
+        // Get all jobs and extract salary information
+        const jobs = await jobService.getAllJobs();
+        
+        // Process jobs to create salary insights
+        const salaryInsights = [];
+        
+        // Group by job title
+        const jobTitleGroups = {};
+        jobs.forEach(job => {
+          if (job.salary && job.salary !== 'Not specified') {
+            const normalizedTitle = job.title.toLowerCase().replace(/\s+/g, ' ').trim();
+            if (!jobTitleGroups[normalizedTitle]) {
+              jobTitleGroups[normalizedTitle] = {
+                title: job.title,
+                salaries: [],
+                companies: new Set(),
+                locations: new Set(),
+                jobType: job.jobType,
+                count: 0
+              };
+            }
+            
+            // Parse salary range
+            const salaryRange = parseSalaryRange(job.salary);
+            if (salaryRange) {
+              jobTitleGroups[normalizedTitle].salaries.push(salaryRange);
+              jobTitleGroups[normalizedTitle].companies.add(job.company);
+              jobTitleGroups[normalizedTitle].locations.add(job.location);
+              jobTitleGroups[normalizedTitle].count++;
+            }
+          }
+        });
+
+        // Convert to salary insights array
+        Object.keys(jobTitleGroups).forEach(key => {
+          const group = jobTitleGroups[key];
+          if (group.salaries.length > 0) {
+            const salaries = group.salaries.map(s => s.average).sort((a, b) => a - b);
+            const min = Math.min(...salaries);
+            const max = Math.max(...salaries);
+            const median = calculateMedian(salaries);
+            const average = Math.round(salaries.reduce((a, b) => a + b, 0) / salaries.length);
+
+            salaryInsights.push({
+              jobTitle: group.title,
+              minSalary: min,
+              maxSalary: max,
+              avgSalary: average,
+              medianSalary: median,
+              companies: Array.from(group.companies),
+              locations: Array.from(group.locations),
+              jobType: group.jobType,
+              jobCount: group.count,
+              salaryRange: `$${formatNumber(min)} - $${formatNumber(max)}`
+            });
+          }
+        });
+
+        // Sort by average salary
+        salaryInsights.sort((a, b) => b.avgSalary - a.avgSalary);
+        
+        setSalaryData(salaryInsights);
+      } catch (err) {
+        setError(err.error || 'Failed to fetch salary data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchSalaryData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchSalaryData = async () => {
-    try {
-      setLoading(true);
-      // Get all jobs and extract salary information
-      const jobs = await jobService.getAllJobs();
-      
-      // Process jobs to create salary insights
-      const salaryInsights = [];
-      
-      // Group by job title
-      const jobTitleGroups = {};
-      jobs.forEach(job => {
-        if (job.salary && job.salary !== 'Not specified') {
-          const normalizedTitle = job.title.toLowerCase().replace(/\s+/g, ' ').trim();
-          if (!jobTitleGroups[normalizedTitle]) {
-            jobTitleGroups[normalizedTitle] = {
-              title: job.title,
-              salaries: [],
-              companies: new Set(),
-              locations: new Set(),
-              jobType: job.jobType,
-              count: 0
-            };
-          }
-          
-          // Parse salary range
-          const salaryRange = parseSalaryRange(job.salary);
-          if (salaryRange) {
-            jobTitleGroups[normalizedTitle].salaries.push(salaryRange);
-            jobTitleGroups[normalizedTitle].companies.add(job.company);
-            jobTitleGroups[normalizedTitle].locations.add(job.location);
-            jobTitleGroups[normalizedTitle].count++;
-          }
-        }
-      });
-
-      // Convert to salary insights array
-      Object.keys(jobTitleGroups).forEach(key => {
-        const group = jobTitleGroups[key];
-        if (group.salaries.length > 0) {
-          const salaries = group.salaries.map(s => s.average).sort((a, b) => a - b);
-          const min = Math.min(...salaries);
-          const max = Math.max(...salaries);
-          const median = calculateMedian(salaries);
-          const average = Math.round(salaries.reduce((a, b) => a + b, 0) / salaries.length);
-
-          salaryInsights.push({
-            jobTitle: group.title,
-            minSalary: min,
-            maxSalary: max,
-            avgSalary: average,
-            medianSalary: median,
-            companies: Array.from(group.companies),
-            locations: Array.from(group.locations),
-            jobType: group.jobType,
-            jobCount: group.count,
-            salaryRange: `$${formatNumber(min)} - $${formatNumber(max)}`
-          });
-        }
-      });
-
-      // Sort by average salary
-      salaryInsights.sort((a, b) => b.avgSalary - a.avgSalary);
-      
-      setSalaryData(salaryInsights);
-    } catch (err) {
-      setError(err.error || 'Failed to fetch salary data');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const parseSalaryRange = (salaryString) => {
     // Remove currency symbols and commas
