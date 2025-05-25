@@ -53,50 +53,50 @@ const HomePage = () => {
                 Join thousands of job seekers who have found their perfect career match through JobFinder
               </p>
 
-              {/* Search Form */}
-              <div className="card shadow border-0 mb-4">
-                <div className="card-body p-4">
-                  <form onSubmit={handleSearch}>
-                    <div className="row g-3">
-                      <div className="col-md-5">
-                        <div className="input-group">
-                          <span className="input-group-text bg-light border-0">
-                            <i className="bi bi-briefcase"></i>
-                          </span>
-                          <input
-                            type="text"
-                            className="form-control border-0 bg-light"
-                            placeholder="Job title, keywords, or company"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-md-5">
-                        <div className="input-group">
-                          <span className="input-group-text bg-light border-0">
-                            <i className="bi bi-geo-alt"></i>
-                          </span>
-                          <input
-                            type="text"
-                            className="form-control border-0 bg-light"
-                            placeholder="City, state, or remote"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-md-2">
-                        <button type="submit" className="btn btn-primary w-100">
-                          <i className="bi bi-search me-1"></i> Search
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </div>
+{/* Search Form */}
+<div className="card shadow border-0 mb-4">
+  <div className="card-body p-4">
+    <form onSubmit={handleSearch}>
+      <div className="row g-3">
+        <div className="col-md-5">
+          <div className="input-group">
+            <span className="input-group-text bg-light border-0">
+              <i className="bi bi-briefcase"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control border-0 bg-light"
+              placeholder="Job title, keywords, or company"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="col-md-5">
+          <div className="input-group">
+            <span className="input-group-text bg-light border-0">
+              <i className="bi bi-geo-alt"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control border-0 bg-light"
+              placeholder="City, state, or remote"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="col-md-2">
+          <button type="submit" className="btn btn-primary w-100">
+            <i className="bi bi-search me-1"></i> Search
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
 
-              {/* Job Type Filters */}
+{/* Job Type Filters */}
               <div className="d-flex justify-content-center flex-wrap gap-2 mb-4">
                 <Link to="/jobs?jobType=Remote" className="badge rounded-pill bg-light px-3 py-2 text-decoration-none">
                   Remote

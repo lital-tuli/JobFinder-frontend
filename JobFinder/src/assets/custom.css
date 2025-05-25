@@ -150,8 +150,17 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Job card specific styles */
 .job-card {
-  position: relative;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
   overflow: hidden;
+  position: relative;
+}
+
+.job-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .job-card::before {
@@ -159,9 +168,9 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
   height: 3px;
-  width: 100%;
-  background-color: var(--jf-primary);
+  background: linear-gradient(90deg, #ff6b00, #ff8f00);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -169,6 +178,8 @@ h1, h2, h3, h4, h5, h6 {
 .job-card:hover::before {
   opacity: 1;
 }
+
+
 
 /* Company logo placeholder */
 .company-logo {
