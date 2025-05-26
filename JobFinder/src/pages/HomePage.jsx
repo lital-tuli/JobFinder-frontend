@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useJobInteractions } from '../hooks/useJobInteractions';
-import JobCard from '../components/JobCard';
 import jobService from '../services/jobService';
 import HeroSection from '../components/Home/HeroSection';
 import FeaturedJobsSection from '../components/Home/FeaturedJobsSection';
 import JobCategoriesSection from '../components/Home/JobCategoriesSection';
 import HowItWorksSection from '../components/Home/HowItWorksSection';
-import TestimonialsSection from '../components/Home/TestimonialsSection'; // Add this import
+import TestimonialsSection from '../components/Home/TestimonialsSection';
 import CTASection from '../components/Home/CTASection';
 
 const HomePage = () => {

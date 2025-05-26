@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useJobInteractions } from '../hooks/useJobInteractions';
 import JobSearchFilters from '../components/JobSearch/JobSearchFilters';
 import JobSearchTips from '../components/JobSearch/JobSearchTips';
-import { useDebounce } from '../hooks/useDebounce';
+import { useDebounce } from "../hooks/useDebounce";
 
 const JobListPage = () => {
   const [jobs, setJobs] = useState([]);
