@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
@@ -94,10 +95,8 @@ const ProfilePictureUpload = ({ currentPicture, onUpdate, loading }) => {
                     onClick={triggerFileSelect}
                     disabled={loading}
                 >
-                    <>
-                        <i className="bi bi-camera me-1"></i>
-                        {previewUrl ? 'Change' : 'Upload'}
-                    </>
+                    <i className="bi bi-camera me-1"></i>
+                    {previewUrl ? 'Change' : 'Upload'}
                 </button>
                 {previewUrl && (
                     <button
