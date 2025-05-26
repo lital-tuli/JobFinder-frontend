@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import ProfilePictureUpload from './ProfilePictureUpload';
+import ProfilePictureUpload from "./ProfilePictureUpload ";
 import ResumeSection from './ResumeSection';
 
 
