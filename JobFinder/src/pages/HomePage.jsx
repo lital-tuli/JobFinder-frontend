@@ -8,7 +8,7 @@ import HeroSection from '../components/Home/HeroSection';
 import FeaturedJobsSection from '../components/Home/FeaturedJobsSection';
 import JobCategoriesSection from '../components/Home/JobCategoriesSection';
 import HowItWorksSection from '../components/Home/HowItWorksSection';
-import TestimonialsSection from '../components/Home/TestimonialsSection';
+import TestimonialsSection from '../components/Home/TestimonialsSection'; // Add this import
 import CTASection from '../components/Home/CTASection';
 
 const HomePage = () => {
@@ -175,7 +175,7 @@ const HomePage = () => {
       {/* How It Works Section */}
       <HowItWorksSection />
 
-      {/* Testimonials Section */}
+      {/* Testimonials Section - INSERT HERE */}
       <TestimonialsSection />
 
       {/* Call to Action Section */}

@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useJobInteractions } from '../hooks/useJobInteractions';
 import JobCard from '../components/JobCard';
-import SavedJobsFilters from '../components/SavedJobs/SavedJobsFilters';
-import SavedJobsTable from '../components/SavedJobs/SavedJobsTable';
-import SavedJobsStats from '../components/SavedJobs/SavedJobsStats';
-import SavedJobsTips from '../components/SavedJobs/SavedJobsTips';
-import BulkActionBar from '../components/SavedJobs/BulkActionBar';
+import SavedJobsFilters from '../components/savedjobs/SavedJobsFilters';
+import SavedJobsTable from '../components/savedjobs/SavedJobsTable';
+import SavedJobsStats from '../components/savedjobs/SavedJobsStats';
+import SavedJobsTips from '../components/savedjobs/SavedJobsTips';
+import BulkActionBar from '../components/savedjobs/BulkActionBar';
 
 const SavedJobsPage = () => {
   const { 
@@ -34,7 +34,7 @@ const SavedJobsPage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const { isAuthenticated } = useAuth();
+  useAuth();
   const navigate = useNavigate();
 
   // Load initial state from URL
@@ -374,7 +374,7 @@ const SavedJobsPage = () => {
                       setSelectedJobs(prev => {
                         const newSet = new Set(prev);
                         if (newSet.has(job._id)) {
-                          newSet.delete(jobId);
+                          newSet.delete(job._id);
                         } else {
                           newSet.add(job._id);
                         }
