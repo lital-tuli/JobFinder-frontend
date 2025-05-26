@@ -1,3 +1,4 @@
+// src/pages/JobListPage.jsx - Refactored and Simplified
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import JobCard from '../components/JobCard';
@@ -5,23 +6,9 @@ import JobTable from '../components/JobTable';
 import jobService from '../services/jobService';
 import { useAuth } from '../hooks/useAuth';
 import { useJobInteractions } from '../hooks/useJobInteractions';
-
-// Custom hook for debouncing
-const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
+import JobSearchFilters from '../components/JobSearch/JobSearchFilters';
+import JobSearchTips from '../components/JobSearch/JobSearchTips';
+import { useDebounce } from '../hooks/useDebounce';
 
 const JobListPage = () => {
   const [jobs, setJobs] = useState([]);
@@ -268,169 +255,21 @@ const JobListPage = () => {
       </div>
 
       {/* Enhanced Search and Filter Section */}
-      <div className={`card shadow-sm border-0 mb-4 ${showFilters || 'd-none d-md-block'}`}>
-        <div className="card-body p-4">
-          {/* Main Search Bar */}
-          <div className="row g-3 mb-3">
-            <div className="col-md-5">
-              <div className="input-group input-group-lg">
-                <span className="input-group-text bg-light border-0">
-                  <i className="bi bi-search text-primary"></i>
-                </span>
-                <input
-                  type="text"
-                  className="form-control border-0 bg-light"
-                  placeholder="Job title, keywords, or company name..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                />
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="input-group input-group-lg">
-                <span className="input-group-text bg-light border-0">
-                  <i className="bi bi-geo-alt text-primary"></i>
-                </span>
-                <input
-                  type="text"
-                  className="form-control border-0 bg-light"
-                  placeholder="Location (city, state, or remote)"
-                  value={filters.location}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="col-md-3">
-              <button 
-                className="btn btn-primary btn-lg w-100"
-                onClick={fetchJobs}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2"></span>
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <i className="bi bi-search me-2"></i>
-                    Search Jobs
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Advanced Filters */}
-          <div className="row g-3 mb-3">
-            <div className="col-md-2">
-              <select
-                className="form-select"
-                value={filters.jobType}
-                onChange={(e) => handleFilterChange('jobType', e.target.value)}
-              >
-                <option value="">All Job Types</option>
-                {filterOptions.jobTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Company name"
-                value={filters.company}
-                onChange={(e) => handleFilterChange('company', e.target.value)}
-              />
-            </div>
-            <div className="col-md-2">
-              <select
-                className="form-select"
-                value={filters.datePosted}
-                onChange={(e) => handleFilterChange('datePosted', e.target.value)}
-              >
-                <option value="">Any time</option>
-                <option value="1">Last 24 hours</option>
-                <option value="3">Last 3 days</option>
-                <option value="7">Last week</option>
-                <option value="14">Last 2 weeks</option>
-                <option value="30">Last month</option>
-              </select>
-            </div>
-            <div className="col-md-2">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Min salary"
-                value={filters.salaryMin}
-                onChange={(e) => handleFilterChange('salaryMin', e.target.value)}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Max salary"
-                value={filters.salaryMax}
-                onChange={(e) => handleFilterChange('salaryMax', e.target.value)}
-              />
-            </div>
-            <div className="col-md-1">
-              <button
-                className="btn btn-outline-secondary w-100"
-                onClick={clearFilters}
-                title="Clear all filters"
-              >
-                <i className="bi bi-x-circle"></i>
-              </button>
-            </div>
-          </div>
-
-          {/* Sort and View Controls */}
-          <div className="d-flex justify-content-between align-items-center">
-            <div className="d-flex align-items-center gap-3">
-              <label className="form-label mb-0 small text-muted">Sort by:</label>
-              <select
-                className="form-select form-select-sm"
-                style={{ width: 'auto' }}
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-              >
-                <option value="latest">Latest Jobs</option>
-                <option value="oldest">Oldest Jobs</option>
-                <option value="title">Job Title A-Z</option>
-                <option value="company">Company A-Z</option>
-                <option value="location">Location A-Z</option>
-                <option value="salary_high">Salary High to Low</option>
-                <option value="salary_low">Salary Low to High</option>
-              </select>
-            </div>
-
-            <div className="d-flex align-items-center gap-2">
-              <span className="small text-muted me-2">View:</span>
-              <div className="btn-group" role="group">
-                <button
-                  type="button"
-                  className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
-                  onClick={() => handleViewModeChange('cards')}
-                  title="Card view"
-                >
-                  <i className="bi bi-grid-3x3-gap"></i>
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
-                  onClick={() => handleViewModeChange('table')}
-                  title="Table view"
-                >
-                  <i className="bi bi-list-ul"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <JobSearchFilters
+        searchTerm={searchTerm}
+        filters={filters}
+        sortBy={sortBy}
+        viewMode={viewMode}
+        showFilters={showFilters}
+        loading={loading}
+        filterOptions={filterOptions}
+        onSearchChange={handleSearchChange}
+        onFilterChange={handleFilterChange}
+        onSortChange={handleSortChange}
+        onViewModeChange={handleViewModeChange}
+        onSearch={fetchJobs}
+        onClearFilters={clearFilters}
+      />
 
       {/* Error Display */}
       {error && (
@@ -514,49 +353,7 @@ const JobListPage = () => {
       )}
 
       {/* Job Search Tips */}
-      {!loading && jobs.length > 0 && (
-        <div className="mt-5">
-          <div className="card bg-light border-0">
-            <div className="card-body p-4">
-              <h5 className="fw-bold mb-3">
-                <i className="bi bi-lightbulb text-warning me-2"></i>
-                Job Search Tips
-              </h5>
-              <div className="row">
-                <div className="col-md-4 mb-3">
-                  <h6 className="fw-semibold">Use Keywords</h6>
-                  <p className="text-muted small mb-0">
-                    Include specific skills, job titles, or technologies in your search for better results.
-                  </p>
-                </div>
-                <div className="col-md-4 mb-3">
-                  <h6 className="fw-semibold">Set Job Alerts</h6>
-                  <p className="text-muted small mb-0">
-                    Save your searches and get notified when new matching jobs are posted.
-                  </p>
-                </div>
-                <div className="col-md-4 mb-3">
-                  <h6 className="fw-semibold">Apply Quickly</h6>
-                  <p className="text-muted small mb-0">
-                    The best opportunities get filled fast. Apply as soon as you find a good match.
-                  </p>
-                </div>
-              </div>
-              <div className="d-flex gap-2 mt-3">
-                <Link to="/saved-jobs" className="btn btn-outline-primary btn-sm">
-                  <i className="bi bi-bookmark me-1"></i>View Saved Jobs
-                </Link>
-                <Link to="/applied-jobs" className="btn btn-outline-success btn-sm">
-                  <i className="bi bi-briefcase me-1"></i>My Applications
-                </Link>
-                <Link to="/profile" className="btn btn-outline-secondary btn-sm">
-                  <i className="bi bi-person me-1"></i>Update Profile
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {!loading && jobs.length > 0 && <JobSearchTips />}
     </div>
   );
 };

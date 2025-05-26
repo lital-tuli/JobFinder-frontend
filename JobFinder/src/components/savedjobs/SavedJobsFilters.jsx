@@ -1,9 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-// Bootstrap icons (if not globally included)
-import 'bootstrap-icons/font/bootstrap-icons.css';
-// Bootstrap CSS (if not globally included)
-// import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 const SavedJobsFilters = ({
     filters,
