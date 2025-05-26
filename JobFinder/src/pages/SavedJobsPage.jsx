@@ -1,14 +1,22 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useJobInteractions } from '../context/JobInteractionContext';
+import { useJobInteractions } from '../hooks/useJobInteractions';
 import JobCard from '../components/JobCard';
-import userService from '../services/userService';
 
 const SavedJobsPage = () => {
-  const [savedJobs, setSavedJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // Get saved jobs from context instead of local state
+  const { 
+    savedJobs, 
+    loading: contextLoading, 
+    error: contextError,
+    toggleSaveJob,
+    bulkRemoveSavedJobs,
+    refreshData,
+    clearError,
+    initialized
+  } = useJobInteractions();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState('cards');
   const [sortBy, setSortBy] = useState('savedDate');
@@ -19,35 +27,13 @@ const SavedJobsPage = () => {
     search: ''
   });
   const [selectedJobs, setSelectedJobs] = useState(new Set());
-  const [actionLoading, setActionLoading] = useState(false); // Fixed: Added missing state
+  const [actionLoading, setActionLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
 
   const { user } = useAuth();
-  const { toggleSaveJob, refreshData } = useJobInteractions();
   const navigate = useNavigate();
 
-  // Load saved jobs
-  const fetchSavedJobs = useCallback(async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    setError('');
-    
-    try {
-      const data = await userService.getSavedJobs();
-      setSavedJobs(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.error || 'Failed to fetch saved jobs');
-      setSavedJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchSavedJobs();
-  }, [fetchSavedJobs]);
-
-  // Load preferences from URL and localStorage
+  // Load preferences from URL and localStorage on mount
   useEffect(() => {
     const view = searchParams.get('view') || localStorage.getItem('savedJobsView') || 'cards';
     const sort = searchParams.get('sort') || localStorage.getItem('savedJobsSort') || 'savedDate';
@@ -63,6 +49,12 @@ const SavedJobsPage = () => {
       search: searchParams.get('search') || ''
     });
   }, [searchParams]);
+
+  // Clear context error when component mounts
+  useEffect(() => {
+    clearError();
+    return () => clearError();
+  }, [clearError]);
 
   // Update URL when filters change
   const updateURL = useCallback((newFilters, newSort, newView) => {
@@ -83,6 +75,9 @@ const SavedJobsPage = () => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     updateURL(newFilters);
+    
+    // Clear selected jobs when filters change
+    setSelectedJobs(new Set());
   }, [filters, updateURL]);
 
   // Handle sort change
@@ -101,6 +96,8 @@ const SavedJobsPage = () => {
 
   // Filter and sort jobs
   const filteredAndSortedJobs = useMemo(() => {
+    if (!Array.isArray(savedJobs)) return [];
+    
     let filtered = [...savedJobs];
 
     // Apply filters
@@ -130,7 +127,7 @@ const SavedJobsPage = () => {
       );
     }
 
-    // Apply sorting - Fixed: Removed duplicate case and syntax error
+    // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'savedDate':
@@ -160,22 +157,24 @@ const SavedJobsPage = () => {
   // Handle job unsave
   const handleUnsaveJob = useCallback(async (jobId) => {
     try {
+      setLocalError('');
       await toggleSaveJob(jobId);
-      setSavedJobs(prev => prev.filter(job => job._id !== jobId));
+      
+      // Remove from selected jobs if it was selected
       setSelectedJobs(prev => {
         const newSet = new Set(prev);
         newSet.delete(jobId);
         return newSet;
       });
       
-      // Refresh job interactions data
-      await refreshData();
+      console.log('Job unsaved successfully');
     } catch (err) {
-      setError(err.error || 'Failed to unsave job');
+      console.error('Failed to unsave job:', err);
+      setLocalError(err.message || 'Failed to unsave job');
     }
-  }, [toggleSaveJob, refreshData]);
+  }, [toggleSaveJob]);
 
-  // Bulk actions
+  // Job selection handlers
   const handleSelectJob = useCallback((jobId) => {
     setSelectedJobs(prev => {
       const newSet = new Set(prev);
@@ -196,6 +195,7 @@ const SavedJobsPage = () => {
     }
   }, [selectedJobs.size, filteredAndSortedJobs]);
 
+  // Bulk unsave handler
   const handleBulkUnsave = useCallback(async () => {
     if (selectedJobs.size === 0) return;
     
@@ -206,20 +206,19 @@ const SavedJobsPage = () => {
     if (!confirmed) return;
     
     setActionLoading(true);
+    setLocalError('');
+    
     try {
-      const promises = Array.from(selectedJobs).map(jobId => toggleSaveJob(jobId));
-      await Promise.all(promises);
-      
-      setSavedJobs(prev => prev.filter(job => !selectedJobs.has(job._id)));
+      await bulkRemoveSavedJobs(Array.from(selectedJobs));
       setSelectedJobs(new Set());
-      
-      await refreshData();
+      console.log('Bulk unsave completed successfully');
     } catch (err) {
-      setError(err.error || 'Failed to remove selected jobs');
+      console.error('Failed to bulk unsave jobs:', err);
+      setLocalError(err.message || 'Failed to remove selected jobs');
     } finally {
       setActionLoading(false);
     }
-  }, [selectedJobs, toggleSaveJob, refreshData]);
+  }, [selectedJobs, bulkRemoveSavedJobs]);
 
   // Clear all filters
   const clearFilters = useCallback(() => {
@@ -230,16 +229,47 @@ const SavedJobsPage = () => {
       search: ''
     });
     setSearchParams(new URLSearchParams());
+    setSelectedJobs(new Set());
   }, [setSearchParams]);
 
-  // Get unique filter options
+  // Get unique filter options from saved jobs
   const filterOptions = useMemo(() => {
+    if (!Array.isArray(savedJobs)) return { jobTypes: [], companies: [], locations: [] };
+    
     const jobTypes = [...new Set(savedJobs.map(job => job.jobType).filter(Boolean))];
     const companies = [...new Set(savedJobs.map(job => job.company).filter(Boolean))];
     const locations = [...new Set(savedJobs.map(job => job.location).filter(Boolean))];
     
     return { jobTypes, companies, locations };
   }, [savedJobs]);
+
+  // Handle refresh
+  const handleRefresh = useCallback(async () => {
+    try {
+      setLocalError('');
+      await refreshData();
+    } catch (err) {
+      console.error('Failed to refresh data:', err);
+      setLocalError('Failed to refresh data. Please try again.');
+    }
+  }, [refreshData]);
+
+  // Combined error message
+  const errorMessage = localError || contextError;
+
+  // Show loading state while context is initializing
+  if (!initialized && contextLoading) {
+    return (
+      <div className="container py-5">
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="text-muted">Loading your saved jobs...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-5">
@@ -263,7 +293,19 @@ const SavedJobsPage = () => {
               </p>
             </div>
             <div className="d-flex gap-2">
-              <Link to="/jobs" className="btn btn-outline-primary">
+              <button 
+                className="btn btn-outline-secondary"
+                onClick={handleRefresh}
+                disabled={contextLoading}
+              >
+                {contextLoading ? (
+                  <span className="spinner-border spinner-border-sm me-1"></span>
+                ) : (
+                  <i className="bi bi-arrow-clockwise me-1"></i>
+                )}
+                Refresh
+              </button>
+              <Link to="/jobs" className="btn btn-primary">
                 <i className="bi bi-search me-1"></i>
                 Find More Jobs
               </Link>
@@ -272,146 +314,144 @@ const SavedJobsPage = () => {
         </div>
       </div>
 
-      {/* Filters and Controls */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          <div className="row g-3 mb-3">
-            <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search saved jobs..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-              />
-            </div>
-            <div className="col-md-2">
-              <select
-                className="form-select"
-                value={filters.jobType}
-                onChange={(e) => handleFilterChange('jobType', e.target.value)}
-              >
-                <option value="">All Types</option>
-                {filterOptions.jobTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Location"
-                value={filters.location}
-                onChange={(e) => handleFilterChange('location', e.target.value)}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Company"
-                value={filters.company}
-                onChange={(e) => handleFilterChange('company', e.target.value)}
-              />
-            </div>
-            <div className="col-md-2">
-              <select
-                className="form-select"
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-              >
-                <option value="savedDate">Recently Saved</option>
-                <option value="postedDate">Recently Posted</option>
-                <option value="jobTitle">Job Title</option>
-                <option value="company">Company</option>
-                <option value="salary">Salary</option>
-              </select>
-            </div>
-            <div className="col-md-1">
-              <div className="btn-group w-100">
-                <button
-                  className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
-                  onClick={() => handleViewModeChange('cards')}
-                  title="Card view"
-                >
-                  <i className="bi bi-grid-3x3-gap"></i>
-                </button>
-                <button
-                  className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
-                  onClick={() => handleViewModeChange('table')}
-                  title="Table view"
-                >
-                  <i className="bi bi-list-ul"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Bulk Actions */}
-          {savedJobs.length > 0 && (
-            <div className="d-flex justify-content-between align-items-center">
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="selectAll"
-                  checked={selectedJobs.size === filteredAndSortedJobs.length && filteredAndSortedJobs.length > 0}
-                  onChange={handleSelectAll}
-                />
-                <label className="form-check-label" htmlFor="selectAll">
-                  Select All ({selectedJobs.size} selected)
-                </label>
-              </div>
-              
-              {selectedJobs.size > 0 && (
-                <div className="btn-group">
-                  <button
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={handleBulkUnsave}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-1"></span>
-                        Removing...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-trash me-1"></i>
-                        Remove Selected ({selectedJobs.size})
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Error Display */}
-      {error && (
+      {errorMessage && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
+          {errorMessage}
           <button 
             type="button" 
             className="btn-close" 
-            onClick={() => setError('')}
+            onClick={() => {
+              setLocalError('');
+              clearError();
+            }}
             aria-label="Close"
           ></button>
         </div>
       )}
 
-      {/* Content */}
-      {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary mb-3" role="status">
-            <span className="visually-hidden">Loading...</span>
+      {/* Filters and Controls */}
+      {savedJobs.length > 0 && (
+        <div className="card shadow-sm border-0 mb-4">
+          <div className="card-body">
+            <div className="row g-3 mb-3">
+              <div className="col-md-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search saved jobs..."
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                />
+              </div>
+              <div className="col-md-2">
+                <select
+                  className="form-select"
+                  value={filters.jobType}
+                  onChange={(e) => handleFilterChange('jobType', e.target.value)}
+                >
+                  <option value="">All Types</option>
+                  {filterOptions.jobTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-2">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Location"
+                  value={filters.location}
+                  onChange={(e) => handleFilterChange('location', e.target.value)}
+                />
+              </div>
+              <div className="col-md-2">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Company"
+                  value={filters.company}
+                  onChange={(e) => handleFilterChange('company', e.target.value)}
+                />
+              </div>
+              <div className="col-md-2">
+                <select
+                  className="form-select"
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                >
+                  <option value="savedDate">Recently Saved</option>
+                  <option value="postedDate">Recently Posted</option>
+                  <option value="jobTitle">Job Title</option>
+                  <option value="company">Company</option>
+                  <option value="salary">Salary</option>
+                </select>
+              </div>
+              <div className="col-md-1">
+                <div className="btn-group w-100">
+                  <button
+                    className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
+                    onClick={() => handleViewModeChange('cards')}
+                    title="Card view"
+                  >
+                    <i className="bi bi-grid-3x3-gap"></i>
+                  </button>
+                  <button
+                    className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'} btn-sm`}
+                    onClick={() => handleViewModeChange('table')}
+                    title="Table view"
+                  >
+                    <i className="bi bi-list-ul"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Bulk Actions */}
+            {savedJobs.length > 0 && (
+              <div className="d-flex justify-content-between align-items-center">
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="selectAll"
+                    checked={selectedJobs.size === filteredAndSortedJobs.length && filteredAndSortedJobs.length > 0}
+                    onChange={handleSelectAll}
+                  />
+                  <label className="form-check-label" htmlFor="selectAll">
+                    Select All ({selectedJobs.size} selected)
+                  </label>
+                </div>
+                
+                {selectedJobs.size > 0 && (
+                  <div className="btn-group">
+                    <button
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={handleBulkUnsave}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-1"></span>
+                          Removing...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-trash me-1"></i>
+                          Remove Selected ({selectedJobs.size})
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <p className="text-muted">Loading your saved jobs...</p>
         </div>
-      ) : savedJobs.length === 0 ? (
+      )}
+
+      {/* Content */}
+      {savedJobs.length === 0 ? (
         <div className="text-center py-5">
           <div className="card shadow-sm border-0">
             <div className="card-body p-5">
@@ -568,7 +608,7 @@ const SavedJobsPage = () => {
         </div>
       )}
 
-      {/* Action Modal for bulk operations */}
+      {/* Fixed Action Bar for bulk operations */}
       {selectedJobs.size > 0 && (
         <div className="position-fixed bottom-0 start-50 translate-middle-x mb-3" style={{ zIndex: 1050 }}>
           <div className="card shadow border-0">
