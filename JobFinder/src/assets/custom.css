@@ -160,26 +160,44 @@ h1, h2, h3, h4, h5, h6 {
 
 .job-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
 }
 
-.job-card::before {
-  content: '';
+.job-card-accent {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 3px;
   background: linear-gradient(90deg, #ff6b00, #ff8f00);
+  border-radius: 12px 12px 0 0;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.job-card:hover::before {
+.job-card:hover .job-card-accent {
   opacity: 1;
 }
 
+.save-btn {
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.save-btn:hover {
+  transform: scale(1.1);
+}
+
+.save-btn.btn-warning {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #000;
+}
 
 /* Company logo placeholder */
 .company-logo {
@@ -193,6 +211,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: bold;
   color: var(--jf-primary);
   font-size: 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Category cards */

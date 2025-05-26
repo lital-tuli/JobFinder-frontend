@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -62,10 +61,10 @@ class ErrorBoundary extends React.Component {
                       <i className="bi bi-arrow-clockwise me-2"></i>
                       Try Again
                     </button>
-                    <Link to="/" className="btn btn-outline-secondary px-4">
+                    <a href="/" className="btn btn-outline-secondary px-4">
                       <i className="bi bi-house me-2"></i>
                       Go Home
-                    </Link>
+                    </a>
                   </div>
                   
                   {/* Show error details in development mode */}
@@ -96,9 +95,9 @@ class ErrorBoundary extends React.Component {
                   <div className="mt-4">
                     <p className="small text-muted">
                       If this problem persists, please{' '}
-                      <Link to="/contact" className="text-decoration-none">
+                      <a href="/contact" className="text-decoration-none">
                         contact our support team
-                      </Link>
+                      </a>
                       .
                     </p>
                   </div>

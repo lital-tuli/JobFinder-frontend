@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { useJobInteractions } from '../context/JobInteractionContext';
 import { useAuth } from '../hooks/useAuth';
 
-const JobCard = ({ job, onSave }) => {
-  const { isJobSaved, isJobApplied, toggleSaveJob } = useJobInteractions();
+const JobCard = ({ job, saved = false, onSave }) => {
   const { isAuthenticated } = useAuth();
   const [saving, setSaving] = useState(false);
-
-  const saved = isJobSaved(job._id);
-  const applied = isJobApplied(job._id);
 
   if (!job || !job._id) {
     return (
@@ -65,8 +60,9 @@ const JobCard = ({ job, onSave }) => {
 
     setSaving(true);
     try {
-      await toggleSaveJob(job._id);
-      if (onSave) onSave(job._id);
+      if (onSave) {
+        await onSave(job._id);
+      }
     } catch (error) {
       console.error('Save operation failed:', error);
       alert('Failed to save job. Please try again.');
@@ -152,25 +148,21 @@ const JobCard = ({ job, onSave }) => {
             </div>
 
             <div className="d-flex gap-2">
-              <button 
-                className={`btn btn-sm ${saved ? 'btn-warning' : 'btn-outline-secondary'} save-btn`}
-                onClick={handleSave}
-                disabled={saving}
-                title={saved ? "Remove from saved" : "Save for later"}
-              >
-                {saving ? (
-                  <div className="spinner-border spinner-border-sm" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
-                ) : (
-                  <i className={`bi ${saved ? 'bi-bookmark-fill' : 'bi-bookmark'}`}></i>
-                )}
-              </button>
-
-              {applied && (
-                <span className="badge bg-success small d-flex align-items-center">
-                  <i className="bi bi-check-circle me-1"></i>Applied
-                </span>
+              {onSave && (
+                <button 
+                  className={`btn btn-sm ${saved ? 'btn-warning' : 'btn-outline-secondary'} save-btn`}
+                  onClick={handleSave}
+                  disabled={saving}
+                  title={saved ? "Remove from saved" : "Save for later"}
+                >
+                  {saving ? (
+                    <div className="spinner-border spinner-border-sm" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  ) : (
+                    <i className={`bi ${saved ? 'bi-bookmark-fill' : 'bi-bookmark'}`}></i>
+                  )}
+                </button>
               )}
 
               <Link to={`/jobs/${job._id}`} className="btn btn-primary btn-sm px-3">
@@ -181,58 +173,6 @@ const JobCard = ({ job, onSave }) => {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .job-card {
-          transition: all 0.3s ease;
-          border-radius: 12px !important;
-        }
-
-        .job-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
-        }
-
-        .job-card-accent {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
-          background: linear-gradient(90deg, #ff6b00, #ff8f00);
-          border-radius: 12px 12px 0 0;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-
-        .job-card:hover .job-card-accent {
-          opacity: 1;
-        }
-
-        .save-btn {
-          transition: all 0.2s ease;
-          width: 32px;
-          height: 32px;
-          padding: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .save-btn:hover {
-          transform: scale(1.1);
-        }
-
-        .save-btn.btn-warning {
-          background-color: #ffc107;
-          border-color: #ffc107;
-          color: #000;
-        }
-
-        .company-logo {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-      `}</style>
     </div>
   );
 };
@@ -249,6 +189,7 @@ JobCard.propTypes = {
     tags: PropTypes.arrayOf(PropTypes.string),
     createdAt: PropTypes.string,
   }).isRequired,
+  saved: PropTypes.bool,
   onSave: PropTypes.func,
 };
 

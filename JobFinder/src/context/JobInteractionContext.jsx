@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import userService from '../services/userService';
 import jobService from '../services/jobService';
 
@@ -8,31 +9,36 @@ export const JobInteractionProvider = ({ children }) => {
   const [savedJobs, setSavedJobs] = useState([]);
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Load user's saved jobs and applications on mount
+  const { isAuthenticated, user } = useAuth();
+
   useEffect(() => {
-    loadUserJobData();
-  }, []);
+    if (isAuthenticated && user) {
+      loadJobInteractions();
+    } else {
+      setSavedJobs([]);
+      setAppliedJobs([]);
+    }
+  }, [isAuthenticated, user]);
 
-  const loadUserJobData = async () => {
+  const loadJobInteractions = async () => {
+    if (!isAuthenticated) return;
+
     setLoading(true);
-    try {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+    setError(null);
 
-      // Load both saved jobs and applications in parallel
+    try {
       const [savedResponse, appliedResponse] = await Promise.all([
-        userService.getSavedJobs(),
-        userService.getAppliedJobs()
+        userService.getSavedJobs().catch(() => []),
+        userService.getAppliedJobs().catch(() => [])
       ]);
-      
-      setSavedJobs(savedResponse || []);
-      setAppliedJobs(appliedResponse || []);
-    } catch (error) {
-      console.error('Failed to load user job data:', error);
+
+      setSavedJobs(Array.isArray(savedResponse) ? savedResponse : []);
+      setAppliedJobs(Array.isArray(appliedResponse) ? appliedResponse : []);
+    } catch (err) {
+      console.error('Failed to load job interactions:', err);
+      setError('Failed to load your job preferences');
       setSavedJobs([]);
       setAppliedJobs([]);
     } finally {
@@ -41,25 +47,24 @@ export const JobInteractionProvider = ({ children }) => {
   };
 
   const toggleSaveJob = async (jobId) => {
+    if (!isAuthenticated) {
+      throw new Error('Please log in to save jobs');
+    }
+
     try {
       const response = await jobService.saveJob(jobId);
-      
-      // Check if job was saved or unsaved
       const isCurrentlySaved = savedJobs.some(job => job._id === jobId);
-      
+
       if (isCurrentlySaved) {
-        // Remove from saved jobs
         setSavedJobs(prev => prev.filter(job => job._id !== jobId));
       } else {
-        // Add to saved jobs - fetch job details
-        try {
-          const jobData = await jobService.getJobById(jobId);
-          setSavedJobs(prev => [...prev, { ...jobData, savedAt: new Date() }]);
-        } catch (fetchError) {
-          console.error('Failed to fetch job details:', fetchError);
-        }
+        const jobData = await jobService.getJobById(jobId);
+        setSavedJobs(prev => [...prev, {
+          ...jobData,
+          savedAt: new Date().toISOString()
+        }]);
       }
-      
+
       return response;
     } catch (error) {
       console.error('Failed to toggle save job:', error);
@@ -68,23 +73,27 @@ export const JobInteractionProvider = ({ children }) => {
   };
 
   const applyForJob = async (jobId) => {
+    if (!isAuthenticated) {
+      throw new Error('Please log in to apply for jobs');
+    }
+
     try {
       const response = await jobService.applyForJob(jobId);
-      
-      // Add to applied jobs if not already there
-      if (!appliedJobs.some(job => job._id === jobId)) {
-        try {
-          const jobData = await jobService.getJobById(jobId);
-          setAppliedJobs(prev => [...prev, {
-            ...jobData,
-            appliedAt: new Date(),
-            status: 'pending'
-          }]);
-        } catch (fetchError) {
-          console.error('Failed to fetch job details:', fetchError);
-        }
+
+      const isAlreadyApplied = appliedJobs.some(job =>
+        (job._id === jobId) || (job.job && job.job._id === jobId)
+      );
+
+      if (!isAlreadyApplied) {
+        const jobData = await jobService.getJobById(jobId);
+        setAppliedJobs(prev => [...prev, {
+          _id: jobId,
+          job: jobData,
+          appliedAt: new Date().toISOString(),
+          status: 'pending'
+        }]);
       }
-      
+
       return response;
     } catch (error) {
       console.error('Failed to apply for job:', error);
@@ -97,18 +106,29 @@ export const JobInteractionProvider = ({ children }) => {
   };
 
   const isJobApplied = (jobId) => {
-    return appliedJobs.some(job => job._id === jobId);
+    return appliedJobs.some(job =>
+      (job._id === jobId) || (job.job && job.job._id === jobId)
+    );
   };
+
+  const savedJobIds = savedJobs.map(job => job._id);
+  const appliedJobIds = appliedJobs.map(job =>
+    job.job ? job.job._id : job._id
+  );
 
   const value = {
     savedJobs,
     appliedJobs,
+    savedJobIds,
+    appliedJobIds,
     loading,
+    error,
     toggleSaveJob,
     applyForJob,
     isJobSaved,
     isJobApplied,
-    refreshData: loadUserJobData
+    refreshData: loadJobInteractions,
+    clearError: () => setError(null)
   };
 
   return (
@@ -116,14 +136,6 @@ export const JobInteractionProvider = ({ children }) => {
       {children}
     </JobInteractionContext.Provider>
   );
-};
-
-export const useJobInteractions = () => {
-  const context = useContext(JobInteractionContext);
-  if (!context) {
-    throw new Error('useJobInteractions must be used within JobInteractionProvider');
-  }
-  return context;
 };
 
 export default JobInteractionContext;
