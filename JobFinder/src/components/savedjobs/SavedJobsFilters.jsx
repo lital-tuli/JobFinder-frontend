@@ -1,6 +1,6 @@
+// src/components/SavedJobs/SavedJobsFilters.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
-
 
 const SavedJobsFilters = ({
     filters,

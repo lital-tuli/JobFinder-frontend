@@ -1,8 +1,26 @@
+// src/components/SavedJobs/SavedJobsTable.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 
 const SavedJobsTable = ({ jobs, selectedJobs, onSelectJob, onSelectAll, onUnsaveJob }) => {
+    const getJobTypeBadgeClass = (jobType) => {
+        switch(jobType) {
+            case 'Full-time': return 'bg-primary';
+            case 'Part-time': return 'bg-info';
+            case 'Contract': return 'bg-warning text-dark';
+            case 'Internship': return 'bg-secondary';
+            case 'Remote': return 'bg-success';
+            default: return 'bg-secondary';
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Unknown';
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    };
+
     return (
         <div className="card shadow-sm border-0">
             <div className="table-responsive">
@@ -46,17 +64,27 @@ const SavedJobsTable = ({ jobs, selectedJobs, onSelectJob, onSelectAll, onUnsave
                                             {job.title}
                                         </Link>
                                         <div className="text-muted small">
-                                            {job.description?.substring(0, 60)}...
+                                            {job.description ? 
+                                                `${job.description.substring(0, 60)}...` : 
+                                                'No description available'
+                                            }
                                         </div>
                                     </div>
                                 </td>
-                                <td>{job.company}</td>
+                                <td>
+                                    <div className="d-flex align-items-center">
+                                        <div className="company-logo bg-light rounded p-2 me-2">
+                                            <i className="bi bi-building fs-6 text-primary"></i>
+                                        </div>
+                                        <span>{job.company}</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <i className="bi bi-geo-alt text-primary me-1"></i>
                                     {job.location}
                                 </td>
                                 <td>
-                                    <span className={`badge ${job.jobType === 'Full-time' ? 'bg-primary' : 'bg-secondary'}`}>
+                                    <span className={`badge ${getJobTypeBadgeClass(job.jobType)}`}>
                                         {job.jobType}
                                     </span>
                                 </td>
@@ -69,7 +97,7 @@ const SavedJobsTable = ({ jobs, selectedJobs, onSelectJob, onSelectAll, onUnsave
                                 </td>
                                 <td>
                                     <small className="text-muted">
-                                        {new Date(job.savedAt || job.createdAt).toLocaleDateString()}
+                                        {formatDate(job.savedAt || job.createdAt)}
                                     </small>
                                 </td>
                                 <td>
@@ -77,6 +105,7 @@ const SavedJobsTable = ({ jobs, selectedJobs, onSelectJob, onSelectAll, onUnsave
                                         <Link
                                             to={`/jobs/${job._id}`}
                                             className="btn btn-sm btn-outline-primary"
+                                            title="View job details"
                                         >
                                             <i className="bi bi-eye me-1"></i>View
                                         </Link>

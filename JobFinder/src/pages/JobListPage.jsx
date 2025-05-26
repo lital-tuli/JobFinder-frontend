@@ -1,5 +1,5 @@
 // src/pages/JobListPage.jsx - Refactored and Simplified
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import JobCard from '../components/JobCard';
 import JobTable from '../components/JobTable';
@@ -95,7 +95,7 @@ const JobListPage = () => {
 
       // Remove empty filters
       const cleanFilters = Object.fromEntries(
-        Object.entries(searchFilters).filter(([_, value]) => value)
+        Object.entries(searchFilters).filter(([, value]) => value)
       );
 
       const data = await jobService.getAllJobs(cleanFilters);
