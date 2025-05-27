@@ -1,29 +1,35 @@
-import React, { useState } from 'react';
+// Fixed Hero Section with Working Search
+// src/components/home/HeroSection.jsx
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
-const HeroSection = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [location, setLocation] = useState('');
+const HeroSection = ({ 
+  siteStats, 
+  isAuthenticated, 
+  searchTerm, 
+  location, 
+  onSearchChange, 
+  onLocationChange
+}) => {
+  const navigate = useNavigate();
 
   const handleSearch = (e) => {
     e.preventDefault();
     
     // Create search parameters
     const params = new URLSearchParams();
-    if (searchTerm.trim()) params.append('search', searchTerm.trim());
-    if (location.trim()) params.append('location', location.trim());
+    if (searchTerm?.trim()) params.append('search', searchTerm.trim());
+    if (location?.trim()) params.append('location', location.trim());
     
-    // For demo purposes, we'll show an alert with the search params
-    // In your actual app, you would use navigate(`/jobs?${params.toString()}`)
-    if (searchTerm.trim() || location.trim()) {
-      alert(`Searching for: ${searchTerm || 'any job'} in ${location || 'any location'}`);
-    } else {
-      alert('Please enter a job title or location to search');
-    }
+    // Navigate to jobs page with search parameters
+    navigate(`/jobs?${params.toString()}`);
   };
 
   const handleQuickSearch = (searchType, value) => {
-    // Quick search handler
-    alert(`Quick searching for ${searchType}: ${value}`);
+    const params = new URLSearchParams();
+    params.append(searchType, value);
+    navigate(`/jobs?${params.toString()}`);
   };
 
   const quickSearchCategories = [
@@ -70,26 +76,26 @@ const HeroSection = () => {
               <div className="row g-3 mb-5">
                 <div className="col-4">
                   <div className="text-center">
-                    <h3 className="fw-bold mb-0">6</h3>
+                    <h3 className="fw-bold mb-0">{siteStats?.totalJobs || 0}</h3>
                     <small style={{ color: 'rgba(255, 255, 255, 0.75)' }}>Active Jobs</small>
                   </div>
                 </div>
                 <div className="col-4">
                   <div className="text-center">
-                    <h3 className="fw-bold mb-0">4</h3>
+                    <h3 className="fw-bold mb-0">{siteStats?.totalCompanies || 0}</h3>
                     <small style={{ color: 'rgba(255, 255, 255, 0.75)' }}>Companies</small>
                   </div>
                 </div>
                 <div className="col-4">
                   <div className="text-center">
-                    <h3 className="fw-bold mb-0">1,500+</h3>
+                    <h3 className="fw-bold mb-0">{siteStats?.totalUsers || '1,500+'}</h3>
                     <small style={{ color: 'rgba(255, 255, 255, 0.75)' }}>Job Seekers</small>
                   </div>
                 </div>
               </div>
 
-              {/* Interactive Search Section */}
-              <div className="card shadow-lg border-0">
+              {/* Working Search Section */}
+              <form onSubmit={handleSearch} className="card shadow-lg border-0">
                 <div className="card-body p-4">
                   <div className="row g-3">
                     <div className="col-md-5">
@@ -101,9 +107,8 @@ const HeroSection = () => {
                           type="text"
                           className="form-control border-0 bg-light"
                           placeholder="Job title, keywords, or company"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
+                          value={searchTerm || ''}
+                          onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
                         />
                       </div>
                     </div>
@@ -116,17 +121,15 @@ const HeroSection = () => {
                           type="text"
                           className="form-control border-0 bg-light"
                           placeholder="City or remote"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
+                          value={location || ''}
+                          onChange={(e) => onLocationChange && onLocationChange(e.target.value)}
                         />
                       </div>
                     </div>
                     <div className="col-md-3">
                       <button 
-                        type="button" 
+                        type="submit" 
                         className="btn btn-primary btn-lg w-100"
-                        onClick={handleSearch}
                       >
                         <i className="bi bi-search me-2"></i>
                         Search
@@ -151,22 +154,41 @@ const HeroSection = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </form>
 
               {/* CTA Buttons */}
               <div className="d-flex gap-3 mt-4">
-                <button 
-                  className="btn btn-light btn-lg px-4"
-                  onClick={() => alert('Get Started clicked!')}
-                >
-                  Get Started Free
-                </button>
-                <button 
-                  className="btn btn-outline-light btn-lg px-4"
-                  onClick={() => alert('Learn More clicked!')}
-                >
-                  Learn More
-                </button>
+                {!isAuthenticated ? (
+                  <>
+                    <button 
+                      className="btn btn-light btn-lg px-4"
+                      onClick={() => navigate('/register')}
+                    >
+                      Get Started Free
+                    </button>
+                    <button 
+                      className="btn btn-outline-light btn-lg px-4"
+                      onClick={() => navigate('/about')}
+                    >
+                      Learn More
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      className="btn btn-light btn-lg px-4"
+                      onClick={() => navigate('/jobs')}
+                    >
+                      Browse Jobs
+                    </button>
+                    <button 
+                      className="btn btn-outline-light btn-lg px-4"
+                      onClick={() => navigate('/profile')}
+                    >
+                      My Profile
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -319,4 +341,11 @@ const HeroSection = () => {
   );
 };
 
-export default HeroSection;
+HeroSection.propTypes = {
+  siteStats: PropTypes.object,
+  isAuthenticated: PropTypes.bool,
+  searchTerm: PropTypes.string,
+  location: PropTypes.string,
+  onSearchChange: PropTypes.func,
+  onLocationChange: PropTypes.func
+};

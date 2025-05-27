@@ -1,8 +1,8 @@
 // src/components/profile/ProfileForm.jsx
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import ProfilePictureUpload from './ProfilePictureUpload'; // Fixed: removed extra space
-import ResumeSection from './ResumeSection'; // Fixed: updated path
+import ProfilePictureUpload from './ProfilePictureUpload'; 
+import ResumeSection from '../resume/ResumeSection'; 
 
 const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
     const [formData, setFormData] = useState({

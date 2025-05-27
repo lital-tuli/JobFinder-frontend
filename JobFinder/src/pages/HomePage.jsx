@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useJobInteractions } from '../hooks/useJobInteractions';
 import jobService from '../services/jobService';
+
+// Fix import paths to match your actual file structure
 import HeroSection from '../components/Home/HeroSection';
 import FeaturedJobsSection from '../components/Home/FeaturedJobsSection';
 import JobCategoriesSection from '../components/Home/JobCategoriesSection';
@@ -174,7 +176,7 @@ const HomePage = () => {
       {/* How It Works Section */}
       <HowItWorksSection />
 
-      {/* Testimonials Section - INSERT HERE */}
+      {/* Testimonials Section */}
       <TestimonialsSection />
 
       {/* Call to Action Section */}
