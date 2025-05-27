@@ -1,5 +1,4 @@
-// src/pages/ProfilePage.jsx - Refactored and Simplified
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import userService from '../services/userService';
 import ProfileStats from '../components/Profile/ProfileStats';
@@ -40,7 +39,15 @@ const ProfilePage = () => {
     loadJobStats();
   }, [user]);
 
+  // Fixed: Make sure the edit button handler is properly defined
+  const handleEditClick = () => {
+    console.log('Edit button clicked'); // Debug log
+    setIsEditing(true);
+    setError(''); // Clear any existing errors
+  };
+
   const handleSave = async (profileData) => {
+    console.log('Saving profile data:', profileData); // Debug log
     setLoading(true);
     setError('');
     setSuccessMessage('');
@@ -61,9 +68,13 @@ const ProfilePage = () => {
   };
 
   const handleCancel = () => {
+    console.log('Cancel button clicked'); // Debug log
     setIsEditing(false);
     setError('');
   };
+
+  // Debug: Log current state
+  console.log('ProfilePage state:', { user, isEditing, loading });
 
   if (!user) {
     return (
@@ -91,6 +102,7 @@ const ProfilePage = () => {
                 type="button" 
                 className="btn-close" 
                 onClick={() => setSuccessMessage('')}
+                aria-label="Close"
               ></button>
             </div>
           )}
@@ -103,6 +115,7 @@ const ProfilePage = () => {
                 type="button" 
                 className="btn-close" 
                 onClick={() => setError('')}
+                aria-label="Close"
               ></button>
             </div>
           )}
@@ -122,10 +135,13 @@ const ProfilePage = () => {
               </h3>
               {!isEditing && (
                 <button
+                  type="button"
                   className="btn btn-primary"
-                  onClick={() => setIsEditing(true)}
+                  onClick={handleEditClick}
+                  disabled={loading}
                 >
-                  <i className="bi bi-pencil me-2"></i>Edit Profile
+                  <i className="bi bi-pencil me-2"></i>
+                  Edit Profile
                 </button>
               )}
             </div>
@@ -143,6 +159,23 @@ const ProfilePage = () => {
               )}
             </div>
           </div>
+
+          {/* Debug Panel - Remove in production */}
+          {import.meta.env.MODE === 'development' && (
+            <div className="card mt-3 border-warning">
+              <div className="card-header bg-warning bg-opacity-10">
+                <h6 className="mb-0">Debug Info</h6>
+              </div>
+              <div className="card-body">
+                <small>
+                  <strong>User:</strong> {user ? 'Loaded' : 'Not loaded'}<br />
+                  <strong>Editing:</strong> {isEditing ? 'Yes' : 'No'}<br />
+                  <strong>Loading:</strong> {loading ? 'Yes' : 'No'}<br />
+                  <strong>User Name:</strong> {user?.name?.first} {user?.name?.last}
+                </small>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
