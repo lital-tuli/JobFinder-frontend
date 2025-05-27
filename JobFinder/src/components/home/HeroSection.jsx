@@ -349,3 +349,6 @@ HeroSection.propTypes = {
   onSearchChange: PropTypes.func,
   onLocationChange: PropTypes.func
 };
+
+// This is the important part - MAKE SURE to export as default
+export default HeroSection;

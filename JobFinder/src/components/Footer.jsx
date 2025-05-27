@@ -34,8 +34,8 @@ const Footer = () => {
             <ul className="footer-links">
               <li><Link to="/jobs">Browse Jobs</Link></li>
               <li><Link to="/companies">Browse Companies</Link></li>
-              <li><Link to="/salaries">Salary Calculator</Link></li>
-              <li><Link to="/career-advice">Career Advice</Link></li>
+              <li><Link to="/salaries">Salary Information</Link></li>
+              <li><Link to="/saved-jobs">Saved Jobs</Link></li>
             </ul>
           </div>
           
@@ -43,14 +43,13 @@ const Footer = () => {
             <h5>For Employers</h5>
             <ul className="footer-links">
               <li><Link to="/post-job">Post a Job</Link></li>
-              <li><Link to="/pricing">Pricing</Link></li>
-              <li><Link to="/resources">Employer Resources</Link></li>
-              <li><Link to="/solutions">Hiring Solutions</Link></li>
+              <li><Link to="/my-listings">My Listings</Link></li>
+              <li><Link to="/about">About JobFinder</Link></li>
             </ul>
           </div>
           
           <div className="col-lg-3 col-md-6">
-            <h5>Company</h5>
+            <h5>Support</h5>
             <ul className="footer-links">
               <li><Link to="/about">About Us</Link></li>
               <li><Link to="/contact">Contact Us</Link></li>
@@ -67,7 +66,7 @@ const Footer = () => {
           <div className="d-flex gap-3">
             <Link to="/privacy" className="text-muted small">Privacy</Link>
             <Link to="/terms" className="text-muted small">Terms</Link>
-            <Link to="/sitemap" className="text-muted small">Sitemap</Link>
+            <Link to="/about" className="text-muted small">About</Link>
           </div>
         </div>
       </div>

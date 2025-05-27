@@ -99,15 +99,6 @@ const HomePage = () => {
     return categoryMap;
   };
 
-  // Handle search form submission
-  const handleSearch = useCallback((e) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchTerm.trim()) params.append('search', searchTerm.trim());
-    if (location.trim()) params.append('location', location.trim());
-    navigate(`/jobs?${params.toString()}`);
-  }, [searchTerm, location, navigate]);
-
   // Handle job save
   const handleSaveJob = useCallback(async (jobId) => {
     if (!isAuthenticated) {
@@ -123,13 +114,6 @@ const HomePage = () => {
     }
   }, [isAuthenticated, toggleSaveJob, navigate]);
 
-  // Quick search handlers
-  const handleQuickSearch = useCallback((searchType, value) => {
-    const params = new URLSearchParams();
-    params.append(searchType, value);
-    navigate(`/jobs?${params.toString()}`);
-  }, [navigate]);
-
   return (
     <div className="home-page">
       {/* Hero Section */}
@@ -141,8 +125,6 @@ const HomePage = () => {
         location={location}
         onSearchChange={setSearchTerm}
         onLocationChange={setLocation}
-        onSearch={handleSearch}
-        onQuickSearch={handleQuickSearch}
       />
 
       {/* Error Display */}
