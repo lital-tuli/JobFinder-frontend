@@ -2,13 +2,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import JobCard from '../components/JobCard';
-import JobTable from '../components/JobTable';
-import jobService from '../services/jobService';
-import { useAuth } from '../hooks/useAuth';
-import { useJobInteractions } from '../hooks/useJobInteractions';
-import JobSearchFilters from '../components/JobSearch/JobSearchFilters';
-import JobSearchTips from '../components/JobSearch/JobSearchTips';
-import { useDebounce } from "../hooks/useDebounce";
+import JobTable from '../../components/jobs/JobTable';
+import jobService from '../../services/jobService';
+import { useAuth } from '../../hooks/useAuth';
+import { useJobInteractions } from '../../hooks/useJobInteractions';
+import JobSearchFilters from '../../components/JobSearch/JobSearchFilters';
+import JobSearchTips from '../../components/JobSearch/JobSearchTips';
+import { useDebounce } from "../../hooks/useDebounce";
 
 const JobListPage = () => {
   const [jobs, setJobs] = useState([]);

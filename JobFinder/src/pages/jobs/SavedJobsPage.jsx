@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useJobInteractions } from '../hooks/useJobInteractions';
+import { useAuth } from '../../hooks/useAuth';
+import { useJobInteractions } from '../../hooks/useJobInteractions';
 import JobCard from '../components/JobCard';
-import SavedJobsFilters from '../components/savedjobs/SavedJobsFilters';
-import SavedJobsTable from '../components/savedjobs/SavedJobsTable';
-import SavedJobsStats from '../components/savedjobs/SavedJobsStats';
-import SavedJobsTips from '../components/savedjobs/SavedJobsTips';
-import BulkActionBar from '../components/savedjobs/BulkActionBar';
+import SavedJobsFilters from '../../components/savedjobs/SavedJobsFilters';
+import SavedJobsTable from '../../components/savedjobs/SavedJobsTable';
+import SavedJobsStats from '../../components/savedjobs/SavedJobsStats';
+import SavedJobsTips from '../../components/savedjobs/SavedJobsTips';
+import BulkActionBar from '../../components/savedjobs/BulkActionBar';
 
 const SavedJobsPage = () => {
   const { 
