@@ -9,7 +9,7 @@ import { useAutoLogout } from './hooks/useAutoLogout';
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/features/authentication/LoginPage'));
-const RegisterForm = lazy(() => import('./pages/features/authentication/RegisterForm'));
+const RegisterForm = lazy(() => import('./pages/features/authentication/register/RegisterForm'));
 const ForgotPasswordPage = lazy(() => import('./pages/features/authentication/ForgotPasswordPage'));
 const JobListPage = lazy(() => import('./pages/jobs/JobListPage'));
 const JobDetailsPage = lazy(() => import('./pages/jobs/JobDetailsPage/JobDetailsPage'));
