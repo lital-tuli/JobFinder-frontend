@@ -1,17 +1,16 @@
+import { useState } from 'react';
 
-import React, { useRef } from 'react';
-import PropTypes from 'prop-types';
+const ProfilePictureUpload = ({ currentPicture, onUpdate }) => {
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(currentPicture);
 
-// Simple ProfilePictureUpload component (since the import might be failing)
-const ProfilePictureUpload = ({ currentPicture, onUpdate, loading }) => {
-  const fileInputRef = useRef(null);
-
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validate file
     if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file');
+      alert('Please select an image file');
       return;
     }
 
@@ -20,84 +19,73 @@ const ProfilePictureUpload = ({ currentPicture, onUpdate, loading }) => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      onUpdate && onUpdate(e.target.result);
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
+      const response = await fetch('/api/users/profile/picture', {
+        method: 'POST',
+        headers: {
+          'x-auth-token': localStorage.getItem('token')
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPreview(data.imageUrl);
+        onUpdate(data.imageUrl);
+      } else {
+        alert(data.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div className="profile-picture-upload text-center">
       <div className="mb-3">
-        {currentPicture ? (
+        {preview ? (
           <img 
-            src={currentPicture} 
+            src={preview} 
             alt="Profile" 
-            className="rounded-circle border shadow-sm"
-            style={{ 
-              width: '120px', 
-              height: '120px', 
-              objectFit: 'cover',
-              cursor: 'pointer'
-            }}
-            onClick={() => fileInputRef.current?.click()}
+            className="rounded-circle"
+            style={{ width: '120px', height: '120px', objectFit: 'cover' }}
           />
         ) : (
           <div 
-            className="bg-light rounded-circle border shadow-sm mx-auto d-flex align-items-center justify-content-center"
-            style={{ 
-              width: '120px', 
-              height: '120px', 
-              fontSize: '2.5rem', 
-              color: '#6c757d',
-              cursor: 'pointer'
-            }}
-            onClick={() => fileInputRef.current?.click()}
+            className="bg-light rounded-circle d-flex align-items-center justify-content-center"
+            style={{ width: '120px', height: '120px', fontSize: '3rem' }}
           >
-            <i className="bi bi-person"></i>
+            👤
           </div>
         )}
       </div>
-
+      
       <input
-        ref={fileInputRef}
         type="file"
         accept="image/*"
         onChange={handleFileSelect}
-        className="d-none"
+        style={{ display: 'none' }}
+        id="profilePictureInput"
       />
-
-      <div className="d-flex justify-content-center gap-2">
-        <button
-          type="button"
-          className="btn btn-outline-primary btn-sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={loading}
-        >
-          <i className="bi bi-camera me-1"></i>
-          {currentPicture ? 'Change' : 'Upload'}
-        </button>
-        {currentPicture && (
-          <button
-            type="button"
-            className="btn btn-outline-danger btn-sm"
-            onClick={() => onUpdate && onUpdate(null)}
-            disabled={loading}
-          >
-            <i className="bi bi-trash me-1"></i>
-            Remove
-          </button>
-        )}
-      </div>
+      
+      <label 
+        htmlFor="profilePictureInput" 
+        className="btn btn-outline-primary"
+        style={{ cursor: 'pointer' }}
+      >
+        {uploading ? 'Uploading...' : 'Change Picture'}
+      </label>
     </div>
   );
-};
-
-ProfilePictureUpload.propTypes = {
-  currentPicture: PropTypes.string,
-  onUpdate: PropTypes.func,
-  loading: PropTypes.bool
 };
 
 export default ProfilePictureUpload;

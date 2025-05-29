@@ -1,85 +1,34 @@
-// src/hooks/useAutoLogout.js
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './useAuth';
 
-const INACTIVITY_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+const INACTIVITY_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours
 
 export const useAutoLogout = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { logout } = useAuth();
   const timeoutRef = useRef(null);
-  const lastActivityRef = useRef(Date.now());
 
-  const resetTimeout = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    if (isAuthenticated) {
-      lastActivityRef.current = Date.now();
-      timeoutRef.current = setTimeout(() => {
-        logout();
-        alert('You have been logged out due to inactivity.');
-      }, INACTIVITY_TIMEOUT);
-    }
-  };
-
-  const handleActivity = () => {
-    if (isAuthenticated) {
-      resetTimeout();
-    }
-  };
+  const resetTimeout = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      logout();
+      alert('You have been logged out due to inactivity.');
+    }, INACTIVITY_TIMEOUT);
+  }, [logout]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      resetTimeout();
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, resetTimeout, true);
+    });
 
-      // Activity events to monitor
-      const events = [
-        'mousedown',
-        'mousemove',
-        'keypress',
-        'scroll',
-        'touchstart',
-        'click'
-      ];
-
-      // Add event listeners
-      events.forEach(event => {
-        document.addEventListener(event, handleActivity, true);
-      });
-
-      // Cleanup function
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-        events.forEach(event => {
-          document.removeEventListener(event, handleActivity, true);
-        });
-      };
-    }
-  }, [isAuthenticated]);
-
-  // Check for inactivity on component mount and visibility change
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isAuthenticated) {
-        const timeSinceLastActivity = Date.now() - lastActivityRef.current;
-        if (timeSinceLastActivity >= INACTIVITY_TIMEOUT) {
-          logout();
-          alert('You have been logged out due to inactivity.');
-        } else {
-          resetTimeout();
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    resetTimeout();
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      events.forEach(event => {
+        document.removeEventListener(event, resetTimeout, true);
+      });
     };
-  }, [isAuthenticated]);
-
-  return { resetTimeout };
+  }, [resetTimeout]);
 };
