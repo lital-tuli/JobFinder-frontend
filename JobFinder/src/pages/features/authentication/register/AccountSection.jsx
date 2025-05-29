@@ -1,6 +1,8 @@
+// src/pages/features/authentication/register/AccountInfoSection.jsx
+import React from 'react';
 import PropTypes from 'prop-types';
-import FormField from '../common/FormField/FormField';
-import PasswordStrengthIndicator from '../common/PasswordStrengthIndicator';
+import FormField from '../../../../components/common/FormField/FormField';
+import PasswordStrengthIndicator from '../../../../components/common/PasswordStrengthIndicator';
 
 const AccountInfoSection = ({ 
   formData, 
@@ -13,47 +15,18 @@ const AccountInfoSection = ({
 }) => {
   return (
     <div className={`account-info-section ${className}`}>
-      <div className="section-header mb-3">
-        <h5 className="fw-semibold mb-1">
-          <i className="bi bi-key me-2 text-primary"></i>
-          Account Information
+      <div className="section-header mb-4">
+        <h5 className="fw-semibold mb-2 d-flex align-items-center">
+          <i className="bi bi-shield-lock me-2 text-primary"></i>
+          Account Security
         </h5>
         <p className="text-muted small mb-0">
           {isEditMode 
             ? "Update your login credentials" 
-            : "Set up your login credentials - keep these secure"
+            : "Create a secure password for your account"
           }
         </p>
       </div>
-
-      {/* Email Address */}
-      <FormField
-        label="Email Address"
-        name="email"
-        type="email"
-        value={formData.email || ''}
-        error={errors.email}
-        onChange={(value) => onChange('email', value)}
-        placeholder="your.email@example.com"
-        helpText="This will be your username for logging in"
-        required
-        disabled={isEditMode} // Usually email can't be changed
-      />
-
-      {/* Username (if different from email) */}
-      {'username' in formData && (
-        <FormField
-          label="Username"
-          name="username"
-          type="text"
-          value={formData.username || ''}
-          error={errors.username}
-          onChange={(value) => onChange('username', value)}
-          placeholder="Choose a unique username"
-          helpText="This will be your public username"
-          required
-        />
-      )}
 
       {/* Password Fields */}
       <div className="row">
@@ -67,7 +40,7 @@ const AccountInfoSection = ({
             onChange={(value) => onChange('password', value)}
             placeholder={isEditMode ? "Enter new password" : "Create a secure password"}
             required={!isEditMode}
-            helpText={isEditMode ? "Leave blank to keep current password" : undefined}
+            helpText={isEditMode ? "Leave blank to keep current password" : "Must be at least 8 characters with uppercase, lowercase, 4 numbers, and special character"}
           />
           
           {/* Password Strength Indicator */}
@@ -94,17 +67,21 @@ const AccountInfoSection = ({
             
             {/* Password Match Indicator */}
             {formData.password && formData.confirmPassword && (
-              <div className="mt-1">
+              <div className="mt-2">
                 {formData.password === formData.confirmPassword ? (
-                  <small className="text-success">
-                    <i className="bi bi-check-circle me-1"></i>
-                    Passwords match
-                  </small>
+                  <div className="alert alert-success py-1 px-2 mb-0">
+                    <small>
+                      <i className="bi bi-check-circle me-1"></i>
+                      Passwords match
+                    </small>
+                  </div>
                 ) : (
-                  <small className="text-danger">
-                    <i className="bi bi-x-circle me-1"></i>
-                    Passwords don't match
-                  </small>
+                  <div className="alert alert-warning py-1 px-2 mb-0">
+                    <small>
+                      <i className="bi bi-exclamation-triangle me-1"></i>
+                      Passwords don't match
+                    </small>
+                  </div>
                 )}
               </div>
             )}
@@ -112,9 +89,25 @@ const AccountInfoSection = ({
         )}
       </div>
 
+      {/* Password Requirements Info */}
+      {!showPasswordStrength && (
+        <div className="alert alert-info mb-3">
+          <small>
+            <strong>Password Requirements:</strong>
+            <ul className="mb-0 mt-1">
+              <li>At least 8 characters long</li>
+              <li>One uppercase letter (A-Z)</li>
+              <li>One lowercase letter (a-z)</li>
+              <li>At least 4 numbers (0-9)</li>
+              <li>One special character (!@%$#^&*-_*)</li>
+            </ul>
+          </small>
+        </div>
+      )}
+
       {/* Two-Factor Authentication (if supported) */}
       {'enableTwoFactor' in formData && (
-        <div className="col-md-12 mb-3">
+        <div className="mb-3">
           <FormField
             name="enableTwoFactor"
             type="checkbox"
@@ -164,28 +157,10 @@ const AccountInfoSection = ({
         </div>
       )}
 
-      {/* Account Type/Role Selection (if applicable) */}
-      {'accountType' in formData && (
-        <FormField
-          label="Account Type"
-          name="accountType"
-          type="select"
-          value={formData.accountType || ''}
-          error={errors.accountType}
-          onChange={(value) => onChange('accountType', value)}
-          required
-        >
-          <option value="">Select account type</option>
-          <option value="personal">Personal Account</option>
-          <option value="business">Business Account</option>
-          <option value="organization">Organization Account</option>
-        </FormField>
-      )}
-
       {/* Newsletter/Marketing Preferences */}
       {'marketingEmails' in formData && (
-        <div>
-          <h6 className="fw-semibold mb-2">Communication Preferences</h6>
+        <div className="border-top pt-3 mt-3">
+          <h6 className="fw-semibold mb-3">Communication Preferences</h6>
           <FormField
             name="marketingEmails"
             type="checkbox"
@@ -213,14 +188,11 @@ const AccountInfoSection = ({
 
 AccountInfoSection.propTypes = {
   formData: PropTypes.shape({
-    email: PropTypes.string,
-    username: PropTypes.string,
     password: PropTypes.string,
     confirmPassword: PropTypes.string,
     enableTwoFactor: PropTypes.bool,
     securityQuestion: PropTypes.string,
     securityAnswer: PropTypes.string,
-    accountType: PropTypes.string,
     marketingEmails: PropTypes.bool,
     smsNotifications: PropTypes.bool,
   }).isRequired,

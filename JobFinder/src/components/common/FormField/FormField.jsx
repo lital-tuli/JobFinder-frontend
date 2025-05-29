@@ -1,6 +1,7 @@
+// src/components/common/FormField/FormField.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 import ValidationMessage from '../ValidationMessage';
-import './FormField.module.css';
 
 const FormField = ({
   label,
@@ -17,6 +18,7 @@ const FormField = ({
   children,
   onChange,
   onBlur,
+  rows = 3,
   ...inputProps
 }) => {
   const fieldId = `field-${name}`;
@@ -52,7 +54,7 @@ const FormField = ({
             {...commonProps}
             value={value || ''}
             placeholder={placeholder}
-            rows={inputProps.rows || 3}
+            rows={rows}
           />
         );
       
@@ -117,4 +119,23 @@ const FormField = ({
     </div>
   );
 };
+
+FormField.propTypes = {
+  label: PropTypes.string,
+  name: PropTypes.string.isRequired,
+  type: PropTypes.string,
+  value: PropTypes.any,
+  error: PropTypes.string,
+  success: PropTypes.string,
+  placeholder: PropTypes.string,
+  required: PropTypes.bool,
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+  helpText: PropTypes.string,
+  children: PropTypes.node,
+  onChange: PropTypes.func,
+  onBlur: PropTypes.func,
+  rows: PropTypes.number,
+};
+
 export default FormField;

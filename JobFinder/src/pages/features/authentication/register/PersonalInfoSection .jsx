@@ -1,5 +1,7 @@
+// src/pages/features/authentication/register/PersonalInfoSection.jsx
+import React from 'react';
 import PropTypes from 'prop-types';
-import FormField from '../common/FormField/FormField';
+import FormField from '../../../../components/common/FormField/FormField';
 
 const PersonalInfoSection = ({ 
   formData, 
@@ -12,9 +14,9 @@ const PersonalInfoSection = ({
 }) => {
   return (
     <div className={`personal-info-section ${className}`}>
-      <div className="section-header mb-3">
-        <h5 className="fw-semibold mb-1">
-          <i className="bi bi-person me-2 text-primary"></i>
+      <div className="section-header mb-4">
+        <h5 className="fw-semibold mb-2 d-flex align-items-center">
+          <i className="bi bi-person-circle me-2 text-primary"></i>
           Personal Information
         </h5>
         <p className="text-muted small mb-0">
@@ -65,6 +67,21 @@ const PersonalInfoSection = ({
             required
           />
         </div>
+      </div>
+
+      {/* Email Address */}
+      <div className="mb-3">
+        <FormField
+          label="Email Address"
+          name="email"
+          type="email"
+          value={formData.email || ''}
+          error={errors.email}
+          onChange={(value) => onChange('email', value)}
+          placeholder="your.email@example.com"
+          helpText="This will be your username for logging in"
+          required
+        />
       </div>
 
       {/* Additional Fields Row */}
@@ -146,6 +163,7 @@ PersonalInfoSection.propTypes = {
     firstName: PropTypes.string,
     middleName: PropTypes.string,
     lastName: PropTypes.string,
+    email: PropTypes.string,
     phoneNumber: PropTypes.string,
     location: PropTypes.string,
     dateOfBirth: PropTypes.string,

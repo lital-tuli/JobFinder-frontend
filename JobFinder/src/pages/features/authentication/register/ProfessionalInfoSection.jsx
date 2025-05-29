@@ -1,11 +1,12 @@
+// src/pages/features/authentication/register/ProfessionalInfoSection.jsx
+import React from 'react';
 import PropTypes from 'prop-types';
-import FormField from '../common/FormField/FormField';
+import FormField from '../../../../components/common/FormField/FormField';
 
 const ProfessionalInfoSection = ({ 
   formData, 
   errors, 
   onChange, 
-  userType = 'jobseeker', // 'jobseeker', 'recruiter', or 'both'
   showCompanyInfo = false,
   showSkills = false,
   showExperience = false,
@@ -60,21 +61,18 @@ const ProfessionalInfoSection = ({
 
   return (
     <div className={`professional-info-section ${className}`}>
-      <div className="section-header mb-3">
-        <h5 className="fw-semibold mb-1">
+      <div className="section-header mb-4">
+        <h5 className="fw-semibold mb-2 d-flex align-items-center">
           <i className="bi bi-briefcase me-2 text-primary"></i>
           Professional Information
         </h5>
         <p className="text-muted small mb-0">
-          {userType === 'recruiter' 
-            ? "Tell us about your company and hiring needs"
-            : "Help us understand your career background and goals"
-          }
+          Help us understand your career background and goals
         </p>
       </div>
 
       {/* Role Selection */}
-      {userType === 'both' && (
+      <div className="mb-4">
         <FormField
           label="I am a"
           name="role"
@@ -88,20 +86,20 @@ const ProfessionalInfoSection = ({
           <option value="jobseeker">Job Seeker - Looking for opportunities</option>
           <option value="recruiter">Recruiter/Employer - Posting jobs</option>
         </FormField>
-      )}
+      </div>
 
-      {/* Current Position/Title */}
+      {/* Current Position/Title and Company */}
       <div className="row">
         <div className={showCompanyInfo ? "col-md-6 mb-3" : "col-md-12 mb-3"}>
           <FormField
-            label={userType === 'recruiter' ? "Your Title/Position" : "Current Job Title"}
-            name="jobTitle"
+            label="Current Job Title / Profession"
+            name="profession"
             type="text"
-            value={formData.jobTitle || ''}
-            error={errors.jobTitle}
-            onChange={(value) => onChange('jobTitle', value)}
-            placeholder={userType === 'recruiter' ? "e.g., HR Manager, Talent Acquisition" : "e.g., Software Engineer, Marketing Manager"}
-            helpText={userType === 'recruiter' ? "What's your role in hiring?" : "What's your current or most recent position?"}
+            value={formData.profession || ''}
+            error={errors.profession}
+            onChange={(value) => onChange('profession', value)}
+            placeholder="e.g., Software Engineer, Marketing Manager"
+            helpText="What's your current or most recent position?"
           />
         </div>
 
@@ -121,7 +119,7 @@ const ProfessionalInfoSection = ({
         )}
       </div>
 
-      {/* Industry */}
+      {/* Industry and Experience Level */}
       <div className="row">
         <div className="col-md-6 mb-3">
           <FormField
@@ -161,32 +159,33 @@ const ProfessionalInfoSection = ({
       </div>
 
       {/* Bio/Professional Summary */}
-      <FormField
-        label={userType === 'recruiter' ? "Company Description" : "Professional Summary"}
-        name="bio"
-        type="textarea"
-        value={formData.bio || ''}
-        error={errors.bio}
-        onChange={(value) => onChange('bio', value)}
-        placeholder={
-          userType === 'recruiter' 
-            ? "Tell job seekers about your company culture, mission, and what makes it a great place to work..."
-            : "Describe your professional background, key achievements, and career goals..."
-        }
-        helpText={`${(formData.bio || '').length}/500 characters`}
-        rows={4}
-      />
+      <div className="mb-4">
+        <FormField
+          label="Professional Summary"
+          name="bio"
+          type="textarea"
+          value={formData.bio || ''}
+          error={errors.bio}
+          onChange={(value) => onChange('bio', value)}
+          placeholder="Describe your professional background, key achievements, and career goals..."
+          helpText={`${(formData.bio || '').length}/500 characters`}
+          rows={4}
+        />
+      </div>
 
       {/* Job Preferences (for job seekers) */}
-      {userType === 'jobseeker' && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Job Preferences</h6>
+      {formData.role === 'jobseeker' && (
+        <div className="border-top pt-4 mt-4">
+          <h6 className="fw-semibold mb-3 d-flex align-items-center">
+            <i className="bi bi-gear me-2 text-secondary"></i>
+            Job Preferences
+          </h6>
           
           <div className="row">
             {/* Preferred Job Types */}
             <div className="col-md-6 mb-3">
               <label className="form-label">Preferred Job Types</label>
-              <div className="job-type-checkboxes">
+              <div className="job-type-checkboxes bg-light p-3 rounded">
                 {jobTypes.map(type => (
                   <FormField
                     key={type}
@@ -195,7 +194,7 @@ const ProfessionalInfoSection = ({
                     value={formData.jobTypes?.[type] || false}
                     onChange={(value) => onChange(`jobTypes.${type}`, value)}
                     label={type}
-                    className="mb-1"
+                    className="mb-2"
                   />
                 ))}
               </div>
@@ -266,7 +265,7 @@ const ProfessionalInfoSection = ({
                 value={formData.immediateAvailability || false}
                 onChange={(value) => onChange('immediateAvailability', value)}
                 label="Available immediately"
-                className="mt-4"
+                className="mt-4 pt-2"
               />
             </div>
           </div>
@@ -275,8 +274,11 @@ const ProfessionalInfoSection = ({
 
       {/* Skills Section */}
       {showSkills && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Skills & Expertise</h6>
+        <div className="border-top pt-4 mt-4">
+          <h6 className="fw-semibold mb-3 d-flex align-items-center">
+            <i className="bi bi-tools me-2 text-secondary"></i>
+            Skills & Expertise
+          </h6>
           
           <FormField
             label="Key Skills"
@@ -289,238 +291,16 @@ const ProfessionalInfoSection = ({
             helpText="Enter skills relevant to your profession"
             rows={3}
           />
-
-          {/* Skill Level Indicators */}
-          {formData.skillLevels && (
-            <div className="mt-3">
-              <label className="form-label">Skill Proficiency</label>
-              <div className="skill-levels">
-                {Object.entries(formData.skillLevels).map(([skill, level]) => (
-                  <div key={skill} className="d-flex align-items-center mb-2">
-                    <span className="me-3" style={{ minWidth: '120px' }}>{skill}</span>
-                    <select
-                      className="form-select form-select-sm"
-                      value={level}
-                      onChange={(e) => onChange(`skillLevels.${skill}`, e.target.value)}
-                      style={{ maxWidth: '150px' }}
-                    >
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="advanced">Advanced</option>
-                      <option value="expert">Expert</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Education (if applicable) */}
-      {'education' in formData && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Education</h6>
-          
-          <div className="row">
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="Highest Education Level"
-                name="educationLevel"
-                type="select"
-                value={formData.educationLevel || ''}
-                error={errors.educationLevel}
-                onChange={(value) => onChange('educationLevel', value)}
-              >
-                <option value="">Select education level</option>
-                <option value="high-school">High School</option>
-                <option value="associate">Associate Degree</option>
-                <option value="bachelor">Bachelor's Degree</option>
-                <option value="master">Master's Degree</option>
-                <option value="doctorate">Doctorate/PhD</option>
-                <option value="certificate">Professional Certificate</option>
-                <option value="bootcamp">Coding Bootcamp</option>
-                <option value="other">Other</option>
-              </FormField>
-            </div>
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="Field of Study"
-                name="fieldOfStudy"
-                type="text"
-                value={formData.fieldOfStudy || ''}
-                error={errors.fieldOfStudy}
-                onChange={(value) => onChange('fieldOfStudy', value)}
-                placeholder="e.g., Computer Science, Business Administration"
-              />
-            </div>
-          </div>
-
-          <div className="row">
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="Institution"
-                name="institution"
-                type="text"
-                value={formData.institution || ''}
-                error={errors.institution}
-                onChange={(value) => onChange('institution', value)}
-                placeholder="University/College name"
-              />
-            </div>
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="Graduation Year"
-                name="graduationYear"
-                type="number"
-                value={formData.graduationYear || ''}
-                error={errors.graduationYear}
-                onChange={(value) => onChange('graduationYear', value)}
-                placeholder="2020"
-                min="1950"
-                max={new Date().getFullYear() + 10}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Certifications */}
-      {'certifications' in formData && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Certifications & Licenses</h6>
-          
-          <FormField
-            label="Professional Certifications"
-            name="certifications"
-            type="textarea"
-            value={formData.certifications || ''}
-            error={errors.certifications}
-            onChange={(value) => onChange('certifications', value)}
-            placeholder="List relevant certifications, licenses, or professional qualifications"
-            helpText="Include certification names, issuing organizations, and dates if applicable"
-            rows={3}
-          />
-        </div>
-      )}
-
-      {/* Languages */}
-      {'languages' in formData && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Languages</h6>
-          
-          <FormField
-            label="Languages Spoken"
-            name="languages"
-            type="text"
-            value={formData.languages || ''}
-            error={errors.languages}
-            onChange={(value) => onChange('languages', value)}
-            placeholder="e.g., English (Native), Spanish (Fluent), French (Conversational)"
-            helpText="List languages and proficiency levels"
-          />
-        </div>
-      )}
-
-      {/* Work Authorization (for international candidates) */}
-      {'workAuthorization' in formData && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Work Authorization</h6>
-          
-          <div className="row">
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="Work Authorization Status"
-                name="workAuthorization"
-                type="select"
-                value={formData.workAuthorization || ''}
-                error={errors.workAuthorization}
-                onChange={(value) => onChange('workAuthorization', value)}
-              >
-                <option value="">Select status</option>
-                <option value="citizen">US Citizen</option>
-                <option value="permanent-resident">Permanent Resident</option>
-                <option value="h1b">H1-B Visa</option>
-                <option value="opt">F-1 OPT</option>
-                <option value="other-visa">Other Work Visa</option>
-                <option value="need-sponsorship">Need Sponsorship</option>
-              </FormField>
-            </div>
-            <div className="col-md-6 mb-3">
-              <FormField
-                name="willingToRelocate"
-                type="checkbox"
-                value={formData.willingToRelocate || false}
-                onChange={(value) => onChange('willingToRelocate', value)}
-                label="Willing to relocate for the right opportunity"
-                className="mt-4"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Portfolio/Links */}
-      {'portfolio' in formData && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Portfolio & Links</h6>
-          
-          <div className="row">
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="Portfolio Website"
-                name="portfolioUrl"
-                type="url"
-                value={formData.portfolioUrl || ''}
-                error={errors.portfolioUrl}
-                onChange={(value) => onChange('portfolioUrl', value)}
-                placeholder="https://yourportfolio.com"
-              />
-            </div>
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="LinkedIn Profile"
-                name="linkedinUrl"
-                type="url"
-                value={formData.linkedinUrl || ''}
-                error={errors.linkedinUrl}
-                onChange={(value) => onChange('linkedinUrl', value)}
-                placeholder="https://linkedin.com/in/yourprofile"
-              />
-            </div>
-          </div>
-
-          <div className="row">
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="GitHub Profile"
-                name="githubUrl"
-                type="url"
-                value={formData.githubUrl || ''}
-                error={errors.githubUrl}
-                onChange={(value) => onChange('githubUrl', value)}
-                placeholder="https://github.com/yourusername"
-              />
-            </div>
-            <div className="col-md-6 mb-3">
-              <FormField
-                label="Other Professional Link"
-                name="otherUrl"
-                type="url"
-                value={formData.otherUrl || ''}
-                error={errors.otherUrl}
-                onChange={(value) => onChange('otherUrl', value)}
-                placeholder="https://your-other-profile.com"
-              />
-            </div>
-          </div>
         </div>
       )}
 
       {/* Company-specific fields for recruiters */}
-      {userType === 'recruiter' && (
-        <div className="border-top pt-3 mt-3">
-          <h6 className="fw-semibold mb-3">Company Information</h6>
+      {formData.role === 'recruiter' && (
+        <div className="border-top pt-4 mt-4">
+          <h6 className="fw-semibold mb-3 d-flex align-items-center">
+            <i className="bi bi-building me-2 text-secondary"></i>
+            Company Information
+          </h6>
           
           <div className="row">
             <div className="col-md-6 mb-3">
@@ -578,7 +358,7 @@ const ProfessionalInfoSection = ({
 ProfessionalInfoSection.propTypes = {
   formData: PropTypes.shape({
     role: PropTypes.string,
-    jobTitle: PropTypes.string,
+    profession: PropTypes.string,
     companyName: PropTypes.string,
     industry: PropTypes.string,
     experienceLevel: PropTypes.string,
@@ -590,26 +370,12 @@ ProfessionalInfoSection.propTypes = {
     availabilityDate: PropTypes.string,
     immediateAvailability: PropTypes.bool,
     skills: PropTypes.string,
-    skillLevels: PropTypes.object,
-    educationLevel: PropTypes.string,
-    fieldOfStudy: PropTypes.string,
-    institution: PropTypes.string,
-    graduationYear: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    certifications: PropTypes.string,
-    languages: PropTypes.string,
-    workAuthorization: PropTypes.string,
-    willingToRelocate: PropTypes.bool,
-    portfolioUrl: PropTypes.string,
-    linkedinUrl: PropTypes.string,
-    githubUrl: PropTypes.string,
-    otherUrl: PropTypes.string,
     companySize: PropTypes.string,
     companyWebsite: PropTypes.string,
     hiringTimeline: PropTypes.string,
   }).isRequired,
   errors: PropTypes.object.isRequired,
   onChange: PropTypes.func.isRequired,
-  userType: PropTypes.oneOf(['jobseeker', 'recruiter', 'both']),
   showCompanyInfo: PropTypes.bool,
   showSkills: PropTypes.bool,
   showExperience: PropTypes.bool,
