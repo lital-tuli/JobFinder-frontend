@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobInteractions } from '../../hooks/useJobInteractions';
-import JobCard from '../components/JobCard';
+import JobCard from '../../components/jobs/JobCard';
 import SavedJobsFilters from '../../components/savedjobs/SavedJobsFilters';
 import SavedJobsTable from '../../components/savedjobs/SavedJobsTable';
 import SavedJobsStats from '../../components/savedjobs/SavedJobsStats';

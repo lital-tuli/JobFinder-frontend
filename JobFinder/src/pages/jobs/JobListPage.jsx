@@ -1,7 +1,7 @@
 // src/pages/JobListPage.jsx - Refactored and Simplified
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import JobCard from '../components/JobCard';
+import JobCard from '../../components/jobs/JobCard';
 import JobTable from '../../components/jobs/JobTable';
 import jobService from '../../services/jobService';
 import { useAuth } from '../../hooks/useAuth';

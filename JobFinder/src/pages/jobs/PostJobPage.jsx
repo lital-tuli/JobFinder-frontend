@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
-import jobService from '../services/jobService';
+import jobService from '../../services/jobService';
 
 const PostJobPage = () => {
   const [loading, setLoading] = useState(false);

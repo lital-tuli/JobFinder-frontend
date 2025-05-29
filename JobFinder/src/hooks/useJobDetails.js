@@ -1,34 +1,40 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../hooks/useAuth';
-import { useApi } from '../../../hooks/useApi';
-import jobService from '../../../services/jobService';
+import { useAuth } from './useAuth';
+import jobService from '../services/jobService';
 
 export const useJobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const [job, setJob] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [applicationStatus, setApplicationStatus] = useState('');
   
-  const {
-    data: job,
-    loading,
-    error,
-    execute: fetchJob
-  } = useApi(jobService.getJobById);
-
   useEffect(() => {
+    const fetchJob = async () => {
+      try {
+        setLoading(true);
+        const jobData = await jobService.getJobById(id);
+        setJob(jobData);
+        
+        // Check if user has already applied
+        if (isAuthenticated && user && jobData.applicants) {
+          const hasApplied = jobData.applicants.includes(user._id);
+          setApplicationStatus(hasApplied ? 'applied' : '');
+        }
+      } catch (err) {
+        setError(err.error || 'Failed to fetch job details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (id) {
-      fetchJob(id);
+      fetchJob();
     }
-  }, [id, fetchJob]);
-
-  useEffect(() => {
-    if (job && isAuthenticated && user && job.applicants) {
-      const hasApplied = job.applicants.includes(user._id);
-      setApplicationStatus(hasApplied ? 'applied' : '');
-    }
-  }, [job, isAuthenticated, user]);
+  }, [id, isAuthenticated, user]);
 
   const handleApply = async () => {
     if (!isAuthenticated) {
@@ -42,7 +48,7 @@ export const useJobDetails = () => {
       setApplicationStatus('applied');
     } catch (err) {
       console.error('Failed to apply:', err);
-      setApplicationStatus('');
+      setApplicationStatus('error');
     }
   };
 
@@ -54,7 +60,7 @@ export const useJobDetails = () => {
     
     try {
       await jobService.saveJob(id);
-      // Show success message
+      // Handle success (maybe show toast)
     } catch (err) {
       console.error('Failed to save job:', err);
     }
@@ -69,3 +75,5 @@ export const useJobDetails = () => {
     handleSave
   };
 };
+
+export default useJobDetails;

@@ -2,15 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import jobService from '../services/jobService';
-
-// Import components with correct paths - match your actual file structure
 import HeroSection from '../components/sections/home/HeroSection';
-import FeaturedJobsSection from '../components/home/FeaturedJobsSection';
-import JobCategoriesSection from '../components/home/JobCategoriesSection';
-import HowItWorksSection from '../components/home/HowItWorksSection';
-import TestimonialsSection from '../components/home/TestimonialsSection';
-import CTASection from '../components/home/CTASection';
-
+import FeaturedJobsSection from '../components/sections/home/FeaturedJobsSection';
+import JobCategoriesSection from '../components/sections/home/JobCategoriesSection';
+import HowItWorksSection from '../components/sections/home/HowItWorksSection';
+import TestimonialsSection from '../components/sections/home/TestimonialsSection';
+import CTASection from '../components/sections/home/CTASection';
 // Import job interactions hook with fallback
 import { useJobInteractions as importedUseJobInteractions } from '../hooks/useJobInteractions';
 

@@ -8,15 +8,15 @@ import { useAutoLogout } from './hooks/useAutoLogout';
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const LoginPage = lazy(() => import('./pages/features/authentication/LoginPage'));
+const RegisterForm = lazy(() => import('./pages/features/authentication/RegisterForm'));
 const ForgotPasswordPage = lazy(() => import('./pages/features/authentication/ForgotPasswordPage'));
 const JobListPage = lazy(() => import('./pages/jobs/JobListPage'));
-const JobDetailsPage = lazy(() => import('./pages/JobDetailsPage'));
+const JobDetailsPage = lazy(() => import('./pages/jobs/JobDetailsPage/JobDetailsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const PostJobPage = lazy(() => import('./pages/PostJobPage'));
+const PostJobPage = lazy(() => import('./pages/jobs/PostJobPage'));
 const SavedJobsPage = lazy(() => import('./pages/jobs/SavedJobsPage'));
-const AppliedJobsPage = lazy(() => import('./pages/AppliedJobsPage'));
+const AppliedJobsPage = lazy(() => import('./components/applications/AppliedJobsPage'));
 const MyListingsPage = lazy(() => import('./pages/MyListingsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
@@ -25,7 +25,7 @@ const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
 const SalariesPage = lazy(() => import('./pages/SalariesPage'));
 const Sandbox = lazy(() => import('./components/Sandbox'));
-const Companies = lazy(() => import('./pages/Companies'));
+const Companies = lazy(() => import('./components/companies/Companies'));
 
 // Loading component
 const PageLoader = () => (
@@ -146,7 +146,7 @@ const AppRoutes = () => {
             path="/register" 
             element={
               <PublicRoute>
-                <RegisterPage />
+                <RegisterForm />
               </PublicRoute>
             } 
           />

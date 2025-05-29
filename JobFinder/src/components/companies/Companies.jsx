@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import jobService from '../services/jobService';
+import jobService from '../../services/jobService';
 
 const Companies = () => {
   const [companies, setCompanies] = useState([]);

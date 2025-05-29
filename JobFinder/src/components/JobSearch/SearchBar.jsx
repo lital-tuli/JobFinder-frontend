@@ -1,6 +1,6 @@
 import React from 'react';
-import FormField from '../../../../components/common/forms/FormField';
-import Button from '../../../../components/common/ui/Button';
+import FormField from '../common/FormField/FormField';
+import Button from '../common/ui/LoadingSpinner/Button/Button';
 
 const SearchBar = ({ searchTerm, onSearchChange, onSearch, loading }) => (
   <div className="search-bar card shadow-sm border-0 mb-4">
