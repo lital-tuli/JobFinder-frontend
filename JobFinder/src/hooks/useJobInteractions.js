@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import JobInteractionContext from '../context/JobInteractionContext';
+import { JobInteractionContext } from '../context/JobInteractionContext';
 
 export const useJobInteractions = () => {
   const context = useContext(JobInteractionContext);
@@ -8,3 +8,5 @@ export const useJobInteractions = () => {
   }
   return context;
 };
+
+export default useJobInteractions;

@@ -1,16 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useJobInteractions } from '../hooks/useJobInteractions';
 import jobService from '../services/jobService';
 
-// Fix import paths to match your actual file structure
-import HeroSection from '../components/Home/HeroSection';
-import FeaturedJobsSection from '../components/Home/FeaturedJobsSection';
-import JobCategoriesSection from '../components/Home/JobCategoriesSection';
-import HowItWorksSection from '../components/Home/HowItWorksSection';
-import TestimonialsSection from '../components/Home/TestimonialsSection';
-import CTASection from '../components/Home/CTASection';
+// Import components with correct paths - match your actual file structure
+import HeroSection from '../components/home/HeroSection';
+import FeaturedJobsSection from '../components/home/FeaturedJobsSection';
+import JobCategoriesSection from '../components/home/JobCategoriesSection';
+import HowItWorksSection from '../components/home/HowItWorksSection';
+import TestimonialsSection from '../components/home/TestimonialsSection';
+import CTASection from '../components/home/CTASection';
+
+// Import job interactions hook with fallback
+import { useJobInteractions as importedUseJobInteractions } from '../hooks/useJobInteractions';
+
+// Use the imported hook or provide fallback
+const useJobInteractions = importedUseJobInteractions || (() => ({
+  isJobSaved: () => false,
+  toggleSaveJob: async () => {},
+}));
 
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,7 +35,10 @@ const HomePage = () => {
 
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
-  const { toggleSaveJob, isJobSaved } = useJobInteractions();
+  
+  // Always call the hook (even if it's a fallback)
+  const jobInteractions = useJobInteractions();
+  const { isJobSaved, toggleSaveJob } = jobInteractions;
 
   // Fetch featured jobs and site statistics
   useEffect(() => {
@@ -53,12 +64,12 @@ const HomePage = () => {
         // Generate job categories from actual data
         const categoryMap = generateJobCategories(jobsArray);
         const categoriesWithIcons = [
-          { name: 'Development', icon: 'code-slash', count: categoryMap['Development'] || 0 },
-          { name: 'Design', icon: 'palette', count: categoryMap['Design'] || 0 },
-          { name: 'Marketing', icon: 'graph-up', count: categoryMap['Marketing'] || 0 },
-          { name: 'HR & Recruiting', icon: 'people', count: categoryMap['HR & Recruiting'] || 0 },
-          { name: 'Data & Analytics', icon: 'bar-chart', count: categoryMap['Data & Analytics'] || 0 },
-          { name: 'Customer Service', icon: 'headset', count: categoryMap['Customer Service'] || 0 }
+          { name: 'Development', icon: 'code-slash', count: categoryMap['Development'] || 0, color: 'primary' },
+          { name: 'Design', icon: 'palette', count: categoryMap['Design'] || 0, color: 'success' },
+          { name: 'Marketing', icon: 'graph-up', count: categoryMap['Marketing'] || 0, color: 'info' },
+          { name: 'HR & Recruiting', icon: 'people', count: categoryMap['HR & Recruiting'] || 0, color: 'warning' },
+          { name: 'Data & Analytics', icon: 'bar-chart', count: categoryMap['Data & Analytics'] || 0, color: 'danger' },
+          { name: 'Customer Service', icon: 'headset', count: categoryMap['Customer Service'] || 0, color: 'secondary' }
         ];
 
         setJobCategories(categoriesWithIcons.filter(cat => cat.count > 0));

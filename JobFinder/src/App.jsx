@@ -119,164 +119,162 @@ const AppRoutes = () => {
   }
 
   return (
-    <JobInteractionProvider>
-      <Layout>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/jobs" element={<JobListPage />} />
-            <Route path="/jobs/:id" element={<JobDetailsPage />} />
-            <Route path="/companies" element={<Companies />} />
-            <Route path="/salaries" element={<SalariesPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/privacy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms" element={<TermsOfServicePage />} />
-            
-            {/* Authentication routes (public only) */}
-            <Route 
-              path="/login" 
-              element={
-                <PublicRoute>
-                  <LoginPage />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/register" 
-              element={
-                <PublicRoute>
-                  <RegisterPage />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/forgot-password" 
-              element={
-                <PublicRoute>
-                  <ForgotPasswordPage />
-                </PublicRoute>
-              } 
-            />
-            
-            {/* Protected routes for all authenticated users */}
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Job seeker specific routes */}
-            <Route 
-              path="/saved-jobs" 
-              element={
-                <ProtectedRoute 
-                  roleRequired="jobseeker"
-                  fallback={
-                    <div className="container py-5">
-                      <div className="alert alert-info">
-                        <h4>Feature Not Available</h4>
-                        <p>The saved jobs feature is only available for job seekers. 
-                           <a href="/profile" className="alert-link ms-1">Update your profile</a> to access this feature.
-                        </p>
-                      </div>
-                    </div>
-                  }
-                >
-                  <SavedJobsPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/applied-jobs" 
-              element={
-                <ProtectedRoute roleRequired="jobseeker">
-                  <AppliedJobsPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Recruiter specific routes */}
-            <Route 
-              path="/post-job" 
-              element={
-                <ProtectedRoute 
-                  roleRequired="recruiter"
-                  fallback={
-                    <div className="container py-5">
-                      <div className="alert alert-warning">
-                        <h4>Recruiter Access Required</h4>
-                        <p>You need recruiter privileges to post jobs. 
-                           <a href="/contact" className="alert-link ms-1">Contact us</a> to upgrade your account.
-                        </p>
-                      </div>
-                    </div>
-                  }
-                >
-                  <PostJobPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/my-listings" 
-              element={
-                <ProtectedRoute roleRequired="recruiter">
-                  <MyListingsPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/job/:id/applications" 
-              element={
-                <ProtectedRoute roleRequired="recruiter">
+    <Layout>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/jobs" element={<JobListPage />} />
+          <Route path="/jobs/:id" element={<JobDetailsPage />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/salaries" element={<SalariesPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
+          
+          {/* Authentication routes (public only) */}
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/forgot-password" 
+            element={
+              <PublicRoute>
+                <ForgotPasswordPage />
+              </PublicRoute>
+            } 
+          />
+          
+          {/* Protected routes for all authenticated users */}
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Job seeker specific routes */}
+          <Route 
+            path="/saved-jobs" 
+            element={
+              <ProtectedRoute 
+                roleRequired="jobseeker"
+                fallback={
                   <div className="container py-5">
                     <div className="alert alert-info">
-                      <h4>Feature Coming Soon</h4>
-                      <p>The job applications management feature is currently under development.</p>
-                    </div>
-                  </div>
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Admin specific routes */}
-            <Route 
-              path="/admin/sandbox" 
-              element={
-                <ProtectedRoute roleRequired="admin">
-                  <Sandbox />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/*" 
-              element={
-                <ProtectedRoute roleRequired="admin">
-                  <div className="container py-5">
-                    <div className="alert alert-info">
-                      <h4>Admin Panel</h4>
-                      <p>Advanced admin features coming soon. Use the 
-                         <a href="/admin/sandbox" className="alert-link ms-1">Sandbox</a> for current admin tools.
+                      <h4>Feature Not Available</h4>
+                      <p>The saved jobs feature is only available for job seekers. 
+                         <a href="/profile" className="alert-link ms-1">Update your profile</a> to access this feature.
                       </p>
                     </div>
                   </div>
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Special routes */}
-            <Route path="/unauthorized" element={<UnauthorizedPage />} />
-            
-            {/* Catch-all route for 404 */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
-      </Layout>
-    </JobInteractionProvider>
+                }
+              >
+                <SavedJobsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/applied-jobs" 
+            element={
+              <ProtectedRoute roleRequired="jobseeker">
+                <AppliedJobsPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Recruiter specific routes */}
+          <Route 
+            path="/post-job" 
+            element={
+              <ProtectedRoute 
+                roleRequired="recruiter"
+                fallback={
+                  <div className="container py-5">
+                    <div className="alert alert-warning">
+                      <h4>Recruiter Access Required</h4>
+                      <p>You need recruiter privileges to post jobs. 
+                         <a href="/contact" className="alert-link ms-1">Contact us</a> to upgrade your account.
+                      </p>
+                    </div>
+                  </div>
+                }
+              >
+                <PostJobPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/my-listings" 
+            element={
+              <ProtectedRoute roleRequired="recruiter">
+                <MyListingsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/job/:id/applications" 
+            element={
+              <ProtectedRoute roleRequired="recruiter">
+                <div className="container py-5">
+                  <div className="alert alert-info">
+                    <h4>Feature Coming Soon</h4>
+                    <p>The job applications management feature is currently under development.</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Admin specific routes */}
+          <Route 
+            path="/admin/sandbox" 
+            element={
+              <ProtectedRoute roleRequired="admin">
+                <Sandbox />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/*" 
+            element={
+              <ProtectedRoute roleRequired="admin">
+                <div className="container py-5">
+                  <div className="alert alert-info">
+                    <h4>Admin Panel</h4>
+                    <p>Advanced admin features coming soon. Use the 
+                       <a href="/admin/sandbox" className="alert-link ms-1">Sandbox</a> for current admin tools.
+                    </p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Special routes */}
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          
+          {/* Catch-all route for 404 */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </Layout>
   );
 };
 
@@ -284,7 +282,9 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <AppRoutes />
+        <JobInteractionProvider>
+          <AppRoutes />
+        </JobInteractionProvider>
       </Router>
     </ErrorBoundary>
   );
