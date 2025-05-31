@@ -28,7 +28,36 @@ const HomePage = () => {
   
   // Use the job interactions hook - must be called unconditionally
   const jobInteractions = useJobInteractions();
-  const { isJobSaved, toggleSaveJob } = jobInteractions;
+  const { isJobSaved, toggleSaveJob } = jobInteractions || {
+    isJobSaved: () => false,
+    toggleSaveJob: async () => {
+      console.warn('toggleSaveJob fallback called');
+    },
+  };
+
+  // Generate job categories from job data - MOVED BEFORE useEffect
+  const generateJobCategories = useCallback((jobs) => {
+    const categoryMap = {};
+    jobs.forEach(job => {
+      const title = job.title?.toLowerCase() || '';
+      if (title.includes('developer') || title.includes('engineer') || title.includes('programmer')) {
+        categoryMap['Development'] = (categoryMap['Development'] || 0) + 1;
+      } else if (title.includes('design') || title.includes('ui') || title.includes('ux')) {
+        categoryMap['Design'] = (categoryMap['Design'] || 0) + 1;
+      } else if (title.includes('marketing') || title.includes('social') || title.includes('content')) {
+        categoryMap['Marketing'] = (categoryMap['Marketing'] || 0) + 1;
+      } else if (title.includes('hr') || title.includes('recruit') || title.includes('people')) {
+        categoryMap['HR & Recruiting'] = (categoryMap['HR & Recruiting'] || 0) + 1;
+      } else if (title.includes('data') || title.includes('analyst') || title.includes('science')) {
+        categoryMap['Data & Analytics'] = (categoryMap['Data & Analytics'] || 0) + 1;
+      } else if (title.includes('support') || title.includes('customer') || title.includes('service')) {
+        categoryMap['Customer Service'] = (categoryMap['Customer Service'] || 0) + 1;
+      } else {
+        categoryMap['Other'] = (categoryMap['Other'] || 0) + 1;
+      }
+    });
+    return categoryMap;
+  }, []);
 
   // Fetch featured jobs and site statistics
   useEffect(() => {
@@ -74,31 +103,7 @@ const HomePage = () => {
     };
 
     fetchHomePageData();
-  }, [generateJobCategories]);
-
-  // Generate job categories from job data
-  const generateJobCategories = useCallback((jobs) => {
-    const categoryMap = {};
-    jobs.forEach(job => {
-      const title = job.title?.toLowerCase() || '';
-      if (title.includes('developer') || title.includes('engineer') || title.includes('programmer')) {
-        categoryMap['Development'] = (categoryMap['Development'] || 0) + 1;
-      } else if (title.includes('design') || title.includes('ui') || title.includes('ux')) {
-        categoryMap['Design'] = (categoryMap['Design'] || 0) + 1;
-      } else if (title.includes('marketing') || title.includes('social') || title.includes('content')) {
-        categoryMap['Marketing'] = (categoryMap['Marketing'] || 0) + 1;
-      } else if (title.includes('hr') || title.includes('human') || title.includes('recruit')) {
-        categoryMap['HR & Recruiting'] = (categoryMap['HR & Recruiting'] || 0) + 1;
-      } else if (title.includes('data') || title.includes('analyst') || title.includes('science')) {
-        categoryMap['Data & Analytics'] = (categoryMap['Data & Analytics'] || 0) + 1;
-      } else if (title.includes('support') || title.includes('customer') || title.includes('service')) {
-        categoryMap['Customer Service'] = (categoryMap['Customer Service'] || 0) + 1;
-      } else {
-        categoryMap['Other'] = (categoryMap['Other'] || 0) + 1;
-      }
-    });
-    return categoryMap;
-  }, []);
+  }, [generateJobCategories]); // Added generateJobCategories to dependencies
 
   // Handle job save
   const handleSaveJob = useCallback(async (jobId) => {
