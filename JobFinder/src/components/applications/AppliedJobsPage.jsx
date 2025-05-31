@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useJobInteractions } from '../../context/JobInteractionContext';
-import userService from '../services/userService';
+import userService from './../../services/userService';
 
 const AppliedJobsPage = () => {
   const [appliedJobs, setAppliedJobs] = useState([]);
