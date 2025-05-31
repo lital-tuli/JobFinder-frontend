@@ -12,7 +12,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Import custom CSS
-import './assets/custom.css';
+import  './styles/custom.css'
 
 const container = document.getElementById('root');
 const root = createRoot(container);
