@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useJobInteractions } from '../../context/JobInteractionContext';
 import userService from './../../services/userService';
+import LoadingSpinner from '../common/LoadingSpinner';
+import ErrorMessage from '../common/messages/ErrorMessage';
+import SuccessMessage from '../common/messages/SuccessMessage';
 
 const AppliedJobsPage = () => {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [filters, setFilters] = useState({
     status: 'all',
     search: '',
@@ -48,12 +52,23 @@ const AppliedJobsPage = () => {
       });
       
       setAppliedJobs(normalizedData);
+      
+      if (normalizedData.length > 0) {
+        setSuccessMessage(`Found ${normalizedData.length} application${normalizedData.length > 1 ? 's' : ''}`);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
     } catch (err) {
       setError(err.error || 'Failed to fetch applied jobs');
       setAppliedJobs([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setSuccessMessage('');
+    setError('');
+    fetchAppliedJobs();
   };
 
   // Filter and sort jobs
@@ -124,12 +139,11 @@ const AppliedJobsPage = () => {
   if (loading) {
     return (
       <div className="container py-5">
-        <div className="text-center">
-          <div className="spinner-border text-primary mb-3" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="text-muted">Loading your applications...</p>
-        </div>
+        <LoadingSpinner 
+          size="lg" 
+          message="Loading your applications..." 
+          className="py-5"
+        />
       </div>
     );
   }
@@ -145,25 +159,44 @@ const AppliedJobsPage = () => {
                 Track the status of your job applications ({filteredJobs.length} applications)
               </p>
             </div>
-            <Link to="/jobs" className="btn btn-primary">
-              <i className="bi bi-search me-2"></i>
-              Find More Jobs
-            </Link>
+            <div className="d-flex gap-2">
+              <button 
+                className="btn btn-outline-secondary"
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                {loading ? (
+                  <LoadingSpinner size="sm" inline />
+                ) : (
+                  <i className="bi bi-arrow-clockwise me-1"></i>
+                )}
+                Refresh
+              </button>
+              <Link to="/jobs" className="btn btn-primary">
+                <i className="bi bi-search me-2"></i>
+                Find More Jobs
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Error Display */}
+      {/* Success Message */}
+      {successMessage && (
+        <SuccessMessage 
+          message={successMessage} 
+          onDismiss={() => setSuccessMessage('')}
+          className="mb-4"
+        />
+      )}
+
+      {/* Error Message */}
       {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button 
-            type="button" 
-            className="btn-close" 
-            onClick={() => setError('')}
-            aria-label="Close"
-          ></button>
-        </div>
+        <ErrorMessage 
+          error={error} 
+          onDismiss={() => setError('')}
+          className="mb-4"
+        />
       )}
 
       {/* Filters */}
@@ -244,10 +277,11 @@ const AppliedJobsPage = () => {
         </div>
       ) : filteredJobs.length === 0 ? (
         <div className="text-center py-4">
-          <div className="alert alert-info">
-            <h5>No applications match your filters</h5>
-            <p className="mb-0">Try adjusting your search criteria to see more results.</p>
-          </div>
+          <ErrorMessage 
+            error="No applications match your filters. Try adjusting your search criteria to see more results."
+            type="info"
+            showIcon={false}
+          />
         </div>
       ) : (
         <div className="card shadow-sm border-0">

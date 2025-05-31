@@ -8,6 +8,9 @@ import SavedJobsTable from '../../components/savedjobs/SavedJobsTable';
 import SavedJobsStats from '../../components/savedjobs/SavedJobsStats';
 import SavedJobsTips from '../../components/savedjobs/SavedJobsTips';
 import BulkActionBar from '../../components/savedjobs/BulkActionBar';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ErrorMessage from '../../components/common/messages/ErrorMessage';
+import SuccessMessage from '../../components/common/messages/SuccessMessage';
 
 const SavedJobsPage = () => {
   const { 
@@ -33,6 +36,7 @@ const SavedJobsPage = () => {
   const [selectedJobs, setSelectedJobs] = useState(new Set());
   const [actionLoading, setActionLoading] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useAuth();
   const navigate = useNavigate();
@@ -142,6 +146,8 @@ const SavedJobsPage = () => {
         newSet.delete(jobId);
         return newSet;
       });
+      setSuccessMessage('Job removed from saved jobs');
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setLocalError(err.message || 'Failed to unsave job');
     }
@@ -162,6 +168,8 @@ const SavedJobsPage = () => {
     try {
       await bulkRemoveSavedJobs(Array.from(selectedJobs));
       setSelectedJobs(new Set());
+      setSuccessMessage(`${selectedJobs.size} job${selectedJobs.size > 1 ? 's' : ''} removed successfully`);
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setLocalError(err.message || 'Failed to remove selected jobs');
     } finally {
@@ -193,12 +201,11 @@ const SavedJobsPage = () => {
   if (!initialized && loading) {
     return (
       <div className="container py-5">
-        <div className="text-center">
-          <div className="spinner-border text-primary mb-3" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="text-muted">Loading your saved jobs...</p>
-        </div>
+        <LoadingSpinner 
+          size="lg" 
+          message="Loading your saved jobs..." 
+          className="py-5"
+        />
       </div>
     );
   }
@@ -232,7 +239,7 @@ const SavedJobsPage = () => {
                 disabled={loading}
               >
                 {loading ? (
-                  <span className="spinner-border spinner-border-sm me-1"></span>
+                  <LoadingSpinner size="sm" inline />
                 ) : (
                   <i className="bi bi-arrow-clockwise me-1"></i>
                 )}
@@ -247,20 +254,25 @@ const SavedJobsPage = () => {
         </div>
       </div>
 
-      {/* Error Display */}
+      {/* Success Message */}
+      {successMessage && (
+        <SuccessMessage 
+          message={successMessage} 
+          onDismiss={() => setSuccessMessage('')}
+          className="mb-4"
+        />
+      )}
+
+      {/* Error Message */}
       {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {errorMessage}
-          <button 
-            type="button" 
-            className="btn-close" 
-            onClick={() => {
-              setLocalError('');
-              clearError();
-            }}
-            aria-label="Close"
-          ></button>
-        </div>
+        <ErrorMessage 
+          error={errorMessage} 
+          onDismiss={() => {
+            setLocalError('');
+            clearError();
+          }}
+          className="mb-4"
+        />
       )}
 
       {/* Filters */}
