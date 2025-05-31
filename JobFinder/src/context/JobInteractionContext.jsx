@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import jobService from '../services/jobService';
 import userService from '../services/userService';
 import { useAuth } from '../hooks/useAuth';

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useAuth } from '../../hooks/useAuth';
+import { memo, useState } from 'react';
 
-const JobCard = ({ job, saved = false, onSave }) => {
+
+const JobCard = memo(({ job, saved = false, onSave }) => {
   const { isAuthenticated } = useAuth();
   const [saving, setSaving] = useState(false);
 
@@ -175,7 +176,7 @@ const JobCard = ({ job, saved = false, onSave }) => {
       </div>
     </div>
   );
-};
+});
 
 JobCard.propTypes = {
   job: PropTypes.shape({
