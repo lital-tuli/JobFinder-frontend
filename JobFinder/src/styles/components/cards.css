@@ -1,0 +1,45 @@
+.card {
+  border: none;
+  border-radius: 8px;
+  box-shadow: var(--jf-shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--jf-shadow);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.job-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.job-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.job-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff6b00, #ff8f00);
+  border-radius: 12px 12px 0 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.job-card:hover .job-card-accent {
+  opacity: 1;
+}

@@ -1,0 +1,83 @@
+@media (max-width: 767.98px) {
+  .hero-section {
+    padding: 3rem 0;
+  }
+
+  .card-body {
+    padding: 1.25rem;
+  }
+
+  .navbar-nav {
+    text-align: center;
+  }
+
+  .navbar-nav .nav-link {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .form-control, .form-select {
+    font-size: 16px;
+  }
+
+  .table-responsive {
+    font-size: 0.9rem;
+  }
+
+  .card {
+    margin-bottom: 1rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+
+  .btn-group .btn {
+    margin-bottom: 0.5rem;
+  }
+
+  .input-group {
+    flex-direction: column;
+  }
+
+  .input-group .form-control {
+    margin-bottom: 0.5rem;
+    border-radius: 0.25rem !important;
+  }
+
+  .input-group .btn {
+    border-radius: 0.25rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .navbar-nav .nav-link {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .lead {
+    font-size: 1.1rem;
+  }
+
+  .job-card .card-body {
+    padding: 1rem;
+  }
+
+  .profile-section {
+    margin-bottom: 2rem;
+  }
+}

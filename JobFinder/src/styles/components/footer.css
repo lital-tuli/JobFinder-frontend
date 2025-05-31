@@ -1,0 +1,29 @@
+.footer {
+  background-color: var(--jf-light);
+  padding: 4rem 0 2rem;
+  margin-top: 3rem;
+}
+
+.footer h5 {
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-links li {
+  margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+  color: var(--jf-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: var(--jf-primary);
+}

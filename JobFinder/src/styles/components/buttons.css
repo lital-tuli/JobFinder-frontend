@@ -1,0 +1,28 @@
+.btn {
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+  background-color: var(--jf-primary);
+  border-color: var(--jf-primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--jf-primary-dark);
+  border-color: var(--jf-primary-dark);
+  box-shadow: 0 4px 8px rgba(255, 107, 0, 0.3);
+}
+
+.btn-outline-primary {
+  color: var(--jf-primary);
+  border-color: var(--jf-primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--jf-primary);
+  border-color: var(--jf-primary);
+}
