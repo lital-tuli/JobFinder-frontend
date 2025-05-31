@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import JobCard from '../JobCard';
+import JobCard from '../../jobs/JobCard';
 
 const FeaturedJobsSection = ({
     featuredJobs,

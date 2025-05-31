@@ -8,14 +8,27 @@ import JobCategoriesSection from '../components/sections/home/JobCategoriesSecti
 import HowItWorksSection from '../components/sections/home/HowItWorksSection';
 import TestimonialsSection from '../components/sections/home/TestimonialsSection';
 import CTASection from '../components/sections/home/CTASection';
-// Import job interactions hook with fallback
-import { useJobInteractions as importedUseJobInteractions } from '../hooks/useJobInteractions';
 
 // Use the imported hook or provide fallback
-const useJobInteractions = importedUseJobInteractions || (() => ({
-  isJobSaved: () => false,
-  toggleSaveJob: async () => {},
-}));
+let importedUseJobInteractions;
+try {
+  importedUseJobInteractions = require('../hooks/useJobInteractions').useJobInteractions;
+} catch {
+  importedUseJobInteractions = null;
+}
+
+const useJobInteractions = () => {
+  if (importedUseJobInteractions) {
+    return importedUseJobInteractions();
+  }
+  
+  // Fallback implementation
+  console.warn('useJobInteractions hook not available, using fallback');
+  return {
+    isJobSaved: () => false,
+    toggleSaveJob: async () => {},
+  };
+};
 
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
