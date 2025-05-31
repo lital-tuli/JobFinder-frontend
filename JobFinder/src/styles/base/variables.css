@@ -1,0 +1,170 @@
+/* src/styles/base/variables.css */
+
+:root {
+  /* Primary Color Palette */
+  --jf-primary: #ff6b00;
+  --jf-primary-rgb: 255, 107, 0;
+  --jf-primary-dark: #e65100;
+  --jf-primary-light: #ff8f00;
+  --jf-primary-10: rgba(255, 107, 0, 0.1);
+  --jf-primary-20: rgba(255, 107, 0, 0.2);
+  --jf-primary-30: rgba(255, 107, 0, 0.3);
+
+  /* Secondary Colors */
+  --jf-secondary: #213547;
+  --jf-secondary-rgb: 33, 53, 71;
+  --jf-secondary-light: #64748b;
+  --jf-secondary-dark: #0f172a;
+
+  /* Success Colors */
+  --jf-success: #10b981;
+  --jf-success-light: #34d399;
+  --jf-success-dark: #047857;
+  --jf-success-10: rgba(16, 185, 129, 0.1);
+
+  /* Warning Colors */
+  --jf-warning: #f59e0b;
+  --jf-warning-light: #fbbf24;
+  --jf-warning-dark: #d97706;
+  --jf-warning-10: rgba(245, 158, 11, 0.1);
+
+  /* Info Colors */
+  --jf-info: #3b82f6;
+  --jf-info-light: #60a5fa;
+  --jf-info-dark: #1d4ed8;
+  --jf-info-10: rgba(59, 130, 246, 0.1);
+
+  /* Danger Colors */
+  --jf-danger: #ef4444;
+  --jf-danger-light: #f87171;
+  --jf-danger-dark: #dc2626;
+  --jf-danger-10: rgba(239, 68, 68, 0.1);
+
+  /* Neutral Colors */
+  --jf-white: #ffffff;
+  --jf-black: #000000;
+  --jf-gray-50: #f9fafb;
+  --jf-gray-100: #f3f4f6;
+  --jf-gray-200: #e5e7eb;
+  --jf-gray-300: #d1d5db;
+  --jf-gray-400: #9ca3af;
+  --jf-gray-500: #6b7280;
+  --jf-gray-600: #4b5563;
+  --jf-gray-700: #374151;
+  --jf-gray-800: #1f2937;
+  --jf-gray-900: #111827;
+
+  /* Background Colors */
+  --jf-bg-primary: var(--jf-white);
+  --jf-bg-secondary: var(--jf-gray-50);
+  --jf-bg-muted: var(--jf-gray-100);
+  --jf-bg-dark: var(--jf-gray-900);
+
+  /* Text Colors */
+  --jf-text-primary: var(--jf-gray-900);
+  --jf-text-secondary: var(--jf-gray-600);
+  --jf-text-muted: var(--jf-gray-500);
+  --jf-text-light: var(--jf-gray-400);
+  --jf-text-white: var(--jf-white);
+
+  /* Border Colors */
+  --jf-border-light: var(--jf-gray-200);
+  --jf-border-medium: var(--jf-gray-300);
+  --jf-border-dark: var(--jf-gray-400);
+
+  /* Typography */
+  --jf-font-family-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Helvetica, Arial, sans-serif;
+  --jf-font-family-headings: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --jf-font-family-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+
+  /* Font Weights */
+  --jf-font-weight-light: 300;
+  --jf-font-weight-normal: 400;
+  --jf-font-weight-medium: 500;
+  --jf-font-weight-semibold: 600;
+  --jf-font-weight-bold: 700;
+  --jf-font-weight-extrabold: 800;
+
+  /* Font Sizes */
+  --jf-font-size-xs: 0.75rem;    /* 12px */
+  --jf-font-size-sm: 0.875rem;   /* 14px */
+  --jf-font-size-base: 1rem;     /* 16px */
+  --jf-font-size-lg: 1.125rem;   /* 18px */
+  --jf-font-size-xl: 1.25rem;    /* 20px */
+  --jf-font-size-2xl: 1.5rem;    /* 24px */
+  --jf-font-size-3xl: 1.875rem;  /* 30px */
+  --jf-font-size-4xl: 2.25rem;   /* 36px */
+  --jf-font-size-5xl: 3rem;      /* 48px */
+  --jf-font-size-6xl: 3.75rem;   /* 60px */
+
+  /* Line Heights */
+  --jf-line-height-none: 1;
+  --jf-line-height-tight: 1.25;
+  --jf-line-height-snug: 1.375;
+  --jf-line-height-normal: 1.5;
+  --jf-line-height-relaxed: 1.625;
+  --jf-line-height-loose: 2;
+
+  /* Spacing */
+  --jf-spacing-0: 0;
+  --jf-spacing-1: 0.25rem;   /* 4px */
+  --jf-spacing-2: 0.5rem;    /* 8px */
+  --jf-spacing-3: 0.75rem;   /* 12px */
+  --jf-spacing-4: 1rem;      /* 16px */
+  --jf-spacing-5: 1.25rem;   /* 20px */
+  --jf-spacing-6: 1.5rem;    /* 24px */
+  --jf-spacing-8: 2rem;      /* 32px */
+  --jf-spacing-10: 2.5rem;   /* 40px */
+  --jf-spacing-12: 3rem;     /* 48px */
+  --jf-spacing-16: 4rem;     /* 64px */
+  --jf-spacing-20: 5rem;     /* 80px */
+  --jf-spacing-24: 6rem;     /* 96px */
+
+  /* Border Radius */
+  --jf-radius-none: 0;
+  --jf-radius-sm: 0.125rem;   /* 2px */
+  --jf-radius-base: 0.25rem;  /* 4px */
+  --jf-radius-md: 0.375rem;   /* 6px */
+  --jf-radius-lg: 0.5rem;     /* 8px */
+  --jf-radius-xl: 0.75rem;    /* 12px */
+  --jf-radius-2xl: 1rem;      /* 16px */
+  --jf-radius-3xl: 1.5rem;    /* 24px */
+  --jf-radius-full: 9999px;
+
+  /* Shadows */
+  --jf-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --jf-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --jf-shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --jf-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --jf-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --jf-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* Z-Index */
+  --jf-z-dropdown: 1000;
+  --jf-z-sticky: 1020;
+  --jf-z-fixed: 1030;
+  --jf-z-modal-backdrop: 1040;
+  --jf-z-modal: 1050;
+  --jf-z-popover: 1060;
+  --jf-z-tooltip: 1070;
+
+  /* Transitions */
+  --jf-transition-fast: 150ms ease-in-out;
+  --jf-transition-base: 200ms ease-in-out;
+  --jf-transition-slow: 300ms ease-in-out;
+  --jf-transition-slower: 500ms ease-in-out;
+
+  /* Breakpoints */
+  --jf-breakpoint-sm: 576px;
+  --jf-breakpoint-md: 768px;
+  --jf-breakpoint-lg: 992px;
+  --jf-breakpoint-xl: 1200px;
+  --jf-breakpoint-xxl: 1400px;
+
+  /* Container Max Widths */
+  --jf-container-sm: 540px;
+  --jf-container-md: 720px;
+  --jf-container-lg: 960px;
+  --jf-container-xl: 1140px;
+  --jf-container-xxl: 1320px;
+}

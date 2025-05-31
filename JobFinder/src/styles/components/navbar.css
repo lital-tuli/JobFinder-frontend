@@ -1,0 +1,371 @@
+/* src/styles/components/navbar.css */
+
+.navbar {
+  box-shadow: var(--jf-shadow-sm);
+  background: var(--jf-white) !important;
+  padding: 0.75rem 1rem;
+  transition: all var(--jf-transition-base);
+  border-bottom: 1px solid var(--jf-border-light);
+}
+
+.navbar.scrolled {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.navbar-brand {
+  font-weight: var(--jf-font-weight-bold);
+  font-size: var(--jf-font-size-2xl);
+  color: var(--jf-primary) !important;
+  text-decoration: none;
+  transition: all var(--jf-transition-fast);
+}
+
+.navbar-brand:hover {
+  color: var(--jf-primary-dark) !important;
+  transform: scale(1.05);
+}
+
+.navbar-toggler {
+  border: none;
+  padding: var(--jf-spacing-2);
+  border-radius: var(--jf-radius-base);
+  transition: all var(--jf-transition-fast);
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 2px var(--jf-primary-10);
+  outline: none;
+}
+
+.navbar-toggler:hover {
+  background-color: var(--jf-gray-100);
+}
+
+.navbar-toggler-icon {
+  background-image: none;
+  width: 1.5em;
+  height: 1.5em;
+  position: relative;
+}
+
+.navbar-toggler-icon::before,
+.navbar-toggler-icon::after,
+.navbar-toggler-icon {
+  background-color: var(--jf-secondary);
+}
+
+.navbar-toggler-icon::before,
+.navbar-toggler-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--jf-secondary);
+  transition: all var(--jf-transition-fast);
+}
+
+.navbar-toggler-icon::before {
+  top: 6px;
+}
+
+.navbar-toggler-icon::after {
+  bottom: 6px;
+}
+
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon {
+  background-color: transparent;
+}
+
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::before {
+  transform: rotate(45deg);
+  top: 50%;
+  margin-top: -1px;
+}
+
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::after {
+  transform: rotate(-45deg);
+  bottom: 50%;
+  margin-bottom: -1px;
+}
+
+.navbar-nav {
+  gap: var(--jf-spacing-2);
+}
+
+.nav-link {
+  color: var(--jf-secondary) !important;
+  font-weight: var(--jf-font-weight-medium);
+  font-size: var(--jf-font-size-base);
+  transition: all var(--jf-transition-fast);
+  padding: var(--jf-spacing-2) var(--jf-spacing-4) !important;
+  border-radius: var(--jf-radius-base);
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+  color: var(--jf-primary) !important;
+  background-color: var(--jf-primary-10);
+  transform: translateY(-1px);
+}
+
+.nav-link.active {
+  color: var(--jf-primary) !important;
+  background-color: var(--jf-primary-10);
+  font-weight: var(--jf-font-weight-semibold);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background-color: var(--jf-primary);
+  border-radius: 50%;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  border: none;
+  box-shadow: var(--jf-shadow-lg);
+  border-radius: var(--jf-radius-lg);
+  padding: var(--jf-spacing-2);
+  margin-top: var(--jf-spacing-2);
+  min-width: 200px;
+}
+
+.dropdown-item {
+  padding: var(--jf-spacing-2) var(--jf-spacing-3);
+  font-size: var(--jf-font-size-sm);
+  border-radius: var(--jf-radius-base);
+  transition: all var(--jf-transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--jf-spacing-2);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--jf-primary-10);
+  color: var(--jf-primary);
+  transform: translateX(2px);
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: var(--jf-danger-10);
+  color: var(--jf-danger);
+}
+
+.dropdown-divider {
+  margin: var(--jf-spacing-2) 0;
+  border-color: var(--jf-border-light);
+}
+
+/* User Avatar */
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--jf-primary);
+  color: var(--jf-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--jf-font-weight-semibold);
+  font-size: var(--jf-font-size-sm);
+  border: 2px solid var(--jf-white);
+  box-shadow: var(--jf-shadow-sm);
+  transition: all var(--jf-transition-fast);
+}
+
+.avatar:hover {
+  transform: scale(1.1);
+  box-shadow: var(--jf-shadow-md);
+}
+
+.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--jf-spacing-2);
+  padding: var(--jf-spacing-1);
+  background: none;
+  border: none;
+  color: var(--jf-secondary);
+  text-decoration: none;
+  border-radius: var(--jf-radius-base);
+  transition: all var(--jf-transition-fast);
+}
+
+.dropdown-toggle:hover {
+  background-color: var(--jf-gray-100);
+}
+
+.dropdown-toggle::after {
+  display: none;
+}
+
+/* Mobile Navigation */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    background-color: var(--jf-white);
+    border-radius: var(--jf-radius-lg);
+    margin-top: var(--jf-spacing-3);
+    padding: var(--jf-spacing-4);
+    box-shadow: var(--jf-shadow-lg);
+    border: 1px solid var(--jf-border-light);
+  }
+
+  .navbar-nav {
+    text-align: center;
+    gap: var(--jf-spacing-1);
+  }
+
+  .nav-link {
+    padding: var(--jf-spacing-3) var(--jf-spacing-4) !important;
+    margin-bottom: var(--jf-spacing-1);
+    font-size: var(--jf-font-size-base);
+  }
+
+  .nav-link.active::after {
+    display: none;
+  }
+
+  .dropdown-menu {
+    border: none;
+    box-shadow: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    position: static;
+  }
+
+  .dropdown-item {
+    padding: var(--jf-spacing-2) var(--jf-spacing-4);
+    background-color: var(--jf-gray-50);
+    margin-bottom: var(--jf-spacing-1);
+    border-radius: var(--jf-radius-base);
+  }
+
+  .dropdown-toggle {
+    justify-content: center;
+    width: 100%;
+    padding: var(--jf-spacing-3) var(--jf-spacing-4);
+    border-radius: var(--jf-radius-base);
+    background-color: var(--jf-gray-50);
+  }
+}
+
+/* Fixed Navbar */
+.navbar.fixed-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--jf-z-fixed);
+}
+
+/* Navbar with offset for fixed positioning */
+.navbar-offset {
+  padding-top: 76px; /* Adjust based on navbar height */
+}
+
+/* Search in Navbar */
+.navbar-search {
+  position: relative;
+  max-width: 300px;
+}
+
+.navbar-search .form-control {
+  background-color: var(--jf-gray-100);
+  border: none;
+  border-radius: var(--jf-radius-full);
+  padding: var(--jf-spacing-2) var(--jf-spacing-4);
+  padding-left: var(--jf-spacing-10);
+  font-size: var(--jf-font-size-sm);
+  transition: all var(--jf-transition-fast);
+}
+
+.navbar-search .form-control:focus {
+  background-color: var(--jf-white);
+  box-shadow: 0 0 0 2px var(--jf-primary-10);
+  border-color: var(--jf-primary);
+}
+
+.navbar-search .search-icon {
+  position: absolute;
+  left: var(--jf-spacing-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--jf-text-muted);
+  z-index: 1;
+}
+
+/* Notification Badge */
+.nav-link .badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(25%, -25%);
+  font-size: 0.6rem;
+  padding: 0.25em 0.4em;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Navbar animations */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-collapse.show {
+  animation: slideDown var(--jf-transition-base);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .navbar {
+    background: var(--jf-gray-900) !important;
+    border-bottom-color: var(--jf-gray-700);
+  }
+
+  .navbar.scrolled {
+    background: rgba(17, 24, 39, 0.95) !important;
+  }
+
+  .nav-link {
+    color: var(--jf-gray-300) !important;
+  }
+
+  .nav-link:hover,
+  .nav-link:focus,
+  .nav-link.active {
+    color: var(--jf-primary) !important;
+  }
+
+  .navbar-search .form-control {
+    background-color: var(--jf-gray-800);
+    color: var(--jf-gray-100);
+  }
+
+  .navbar-search .form-control:focus {
+    background-color: var(--jf-gray-700);
+  }
+}
