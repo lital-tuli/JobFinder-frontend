@@ -10,3 +10,5 @@
 @import './components/footer.css';
 @import './components/badges.css';
 @import './components/navbar.css'; 
+
+@import './design-tokens.css';
