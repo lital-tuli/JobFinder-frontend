@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useJobInteractions } from '../hooks/useJobInteractions';
 import jobService from '../services/jobService';
 import HeroSection from '../components/sections/home/HeroSection';
 import FeaturedJobsSection from '../components/sections/home/FeaturedJobsSection';
@@ -8,27 +9,6 @@ import JobCategoriesSection from '../components/sections/home/JobCategoriesSecti
 import HowItWorksSection from '../components/sections/home/HowItWorksSection';
 import TestimonialsSection from '../components/sections/home/TestimonialsSection';
 import CTASection from '../components/sections/home/CTASection';
-
-// Use the imported hook or provide fallback
-let importedUseJobInteractions;
-try {
-  importedUseJobInteractions = require('../hooks/useJobInteractions').useJobInteractions;
-} catch {
-  importedUseJobInteractions = null;
-}
-
-const useJobInteractions = () => {
-  if (importedUseJobInteractions) {
-    return importedUseJobInteractions();
-  }
-  
-  // Fallback implementation
-  console.warn('useJobInteractions hook not available, using fallback');
-  return {
-    isJobSaved: () => false,
-    toggleSaveJob: async () => {},
-  };
-};
 
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +26,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   
-  // Always call the hook (even if it's a fallback)
+  // Use the job interactions hook - must be called unconditionally
   const jobInteractions = useJobInteractions();
   const { isJobSaved, toggleSaveJob } = jobInteractions;
 
@@ -94,10 +74,10 @@ const HomePage = () => {
     };
 
     fetchHomePageData();
-  }, []);
+  }, [generateJobCategories]);
 
   // Generate job categories from job data
-  const generateJobCategories = (jobs) => {
+  const generateJobCategories = useCallback((jobs) => {
     const categoryMap = {};
     jobs.forEach(job => {
       const title = job.title?.toLowerCase() || '';
@@ -107,7 +87,7 @@ const HomePage = () => {
         categoryMap['Design'] = (categoryMap['Design'] || 0) + 1;
       } else if (title.includes('marketing') || title.includes('social') || title.includes('content')) {
         categoryMap['Marketing'] = (categoryMap['Marketing'] || 0) + 1;
-      } else if (title.includes('hr') || title.includes('recruit') || title.includes('people')) {
+      } else if (title.includes('hr') || title.includes('human') || title.includes('recruit')) {
         categoryMap['HR & Recruiting'] = (categoryMap['HR & Recruiting'] || 0) + 1;
       } else if (title.includes('data') || title.includes('analyst') || title.includes('science')) {
         categoryMap['Data & Analytics'] = (categoryMap['Data & Analytics'] || 0) + 1;
@@ -118,7 +98,7 @@ const HomePage = () => {
       }
     });
     return categoryMap;
-  };
+  }, []);
 
   // Handle job save
   const handleSaveJob = useCallback(async (jobId) => {
@@ -130,6 +110,7 @@ const HomePage = () => {
     try {
       await toggleSaveJob(jobId);
     } catch (err) {
+      console.error('Failed to save job:', err);
       setError(err.message || 'Failed to save job');
       setTimeout(() => setError(''), 5000);
     }
@@ -157,6 +138,7 @@ const HomePage = () => {
               type="button" 
               className="btn-close" 
               onClick={() => setError('')}
+              aria-label="Close"
             ></button>
           </div>
         </div>
