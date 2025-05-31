@@ -11,4 +11,14 @@
 @import './components/badges.css';
 @import './components/navbar.css'; 
 
+/* layout styles */
+
+@import './layout/hero.css';
+@import './layout/cta.css';
+
+/* responsive styles */
+@import './responsive/mobile.css';
+
+
+
 @import './design-tokens.css';

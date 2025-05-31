@@ -13,7 +13,6 @@ const AppliedJobsPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [filters, setFilters] = useState({
     status: 'all',
-    search: '',
     sortBy: 'appliedDate'
   });
 
@@ -80,16 +79,6 @@ const AppliedJobsPage = () => {
       // Status filter
       if (filters.status !== 'all' && application.status !== filters.status) {
         return false;
-      }
-      
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        return (
-          job.title?.toLowerCase().includes(searchTerm) ||
-          job.company?.toLowerCase().includes(searchTerm) ||
-          job.location?.toLowerCase().includes(searchTerm)
-        );
       }
       
       return true;
@@ -205,15 +194,6 @@ const AppliedJobsPage = () => {
           <div className="card-body">
             <div className="row g-3">
               <div className="col-md-4">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Search applications..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                />
-              </div>
-              <div className="col-md-3">
                 <select
                   className="form-select"
                   value={filters.status}
@@ -227,7 +207,7 @@ const AppliedJobsPage = () => {
                   <option value="rejected">Rejected</option>
                 </select>
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <select
                   className="form-select"
                   value={filters.sortBy}
@@ -239,12 +219,12 @@ const AppliedJobsPage = () => {
                   <option value="status">Status</option>
                 </select>
               </div>
-              <div className="col-md-2">
+              <div className="col-md-4">
                 <button
                   className="btn btn-outline-secondary w-100"
-                  onClick={() => setFilters({ status: 'all', search: '', sortBy: 'appliedDate' })}
+                  onClick={() => setFilters({ status: 'all', sortBy: 'appliedDate' })}
                 >
-                  Clear
+                  Clear Filters
                 </button>
               </div>
             </div>
