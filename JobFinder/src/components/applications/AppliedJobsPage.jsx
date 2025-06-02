@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useJobInteractions } from '../../context/JobInteractionContext';
 import userService from './../../services/userService';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/messages/ErrorMessage';
@@ -16,13 +15,8 @@ const AppliedJobsPage = () => {
     sortBy: 'appliedDate'
   });
 
-  useJobInteractions();
-
-  useEffect(() => {
-    fetchAppliedJobs();
-  }, []);
-
-  const fetchAppliedJobs = async () => {
+  // ✅ Wrap fetchAppliedJobs in useCallback to prevent recreation on every render
+  const fetchAppliedJobs = useCallback(async () => {
     setLoading(true);
     setError('');
     
@@ -52,9 +46,9 @@ const AppliedJobsPage = () => {
       
       setAppliedJobs(normalizedData);
       
+      // ✅ Only set success message if there are jobs, and don't auto-clear it
       if (normalizedData.length > 0) {
         setSuccessMessage(`Found ${normalizedData.length} application${normalizedData.length > 1 ? 's' : ''}`);
-        setTimeout(() => setSuccessMessage(''), 3000);
       }
     } catch (err) {
       setError(err.error || 'Failed to fetch applied jobs');
@@ -62,49 +56,66 @@ const AppliedJobsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // ✅ Empty dependency array since this function doesn't depend on any props or state
 
-  const handleRefresh = () => {
+  // ✅ Use useEffect with proper dependency
+  useEffect(() => {
+    fetchAppliedJobs();
+  }, [fetchAppliedJobs]);
+
+  // ✅ Clear success message after 3 seconds, but with proper cleanup
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 3000);
+      return () => clearTimeout(timer); // ✅ Cleanup timer
+    }
+  }, [successMessage]);
+
+  // ✅ Wrap handleRefresh in useCallback
+  const handleRefresh = useCallback(() => {
     setSuccessMessage('');
     setError('');
     fetchAppliedJobs();
-  };
+  }, [fetchAppliedJobs]);
 
-  // Filter and sort jobs
-  const filteredJobs = appliedJobs
-    .filter(application => {
-      const job = application.job;
-      if (!job) return false;
-      
-      // Status filter
-      if (filters.status !== 'all' && application.status !== filters.status) {
-        return false;
-      }
-      
-      return true;
-    })
-    .sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'appliedDate':
-          return new Date(b.appliedAt) - new Date(a.appliedAt);
-        case 'jobTitle':
-          return (a.job?.title || '').localeCompare(b.job?.title || '');
-        case 'company':
-          return (a.job?.company || '').localeCompare(b.job?.company || '');
-        case 'status':
-          return (a.status || '').localeCompare(b.status || '');
-        default:
-          return 0;
-      }
-    });
+  // ✅ Memoize filtered jobs to prevent unnecessary recalculations
+  const filteredJobs = useMemo(() => {
+    return appliedJobs
+      .filter(application => {
+        const job = application.job;
+        if (!job) return false;
+        
+        // Status filter
+        if (filters.status !== 'all' && application.status !== filters.status) {
+          return false;
+        }
+        
+        return true;
+      })
+      .sort((a, b) => {
+        switch (filters.sortBy) {
+          case 'appliedDate':
+            return new Date(b.appliedAt) - new Date(a.appliedAt);
+          case 'jobTitle':
+            return (a.job?.title || '').localeCompare(b.job?.title || '');
+          case 'company':
+            return (a.job?.company || '').localeCompare(b.job?.company || '');
+          case 'status':
+            return (a.status || '').localeCompare(b.status || '');
+          default:
+            return 0;
+        }
+      });
+  }, [appliedJobs, filters]); // ✅ Only recalculate when appliedJobs or filters change
 
-  const formatDate = (dateString) => {
+  // ✅ Memoize helper functions
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return 'Unknown';
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+  }, []);
 
-  const getStatusBadgeClass = (status) => {
+  const getStatusBadgeClass = useCallback((status) => {
     switch (status?.toLowerCase()) {
       case 'pending':
         return 'bg-warning';
@@ -119,11 +130,27 @@ const AppliedJobsPage = () => {
       default:
         return 'bg-secondary';
     }
-  };
+  }, []);
 
-  const getStatusText = (status) => {
+  const getStatusText = useCallback((status) => {
     return status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Pending';
-  };
+  }, []);
+
+  // ✅ Memoize filter update functions
+  const updateStatusFilter = useCallback((status) => {
+    setFilters(prev => ({ ...prev, status }));
+  }, []);
+
+  const updateSortFilter = useCallback((sortBy) => {
+    setFilters(prev => ({ ...prev, sortBy }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters({ status: 'all', sortBy: 'appliedDate' });
+  }, []);
+
+  const clearSuccessMessage = useCallback(() => setSuccessMessage(''), []);
+  const clearError = useCallback(() => setError(''), []);
 
   if (loading) {
     return (
@@ -174,7 +201,7 @@ const AppliedJobsPage = () => {
       {successMessage && (
         <SuccessMessage 
           message={successMessage} 
-          onDismiss={() => setSuccessMessage('')}
+          onDismiss={clearSuccessMessage}
           className="mb-4"
         />
       )}
@@ -183,7 +210,7 @@ const AppliedJobsPage = () => {
       {error && (
         <ErrorMessage 
           error={error} 
-          onDismiss={() => setError('')}
+          onDismiss={clearError}
           className="mb-4"
         />
       )}
@@ -197,7 +224,7 @@ const AppliedJobsPage = () => {
                 <select
                   className="form-select"
                   value={filters.status}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) => updateStatusFilter(e.target.value)}
                 >
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -211,7 +238,7 @@ const AppliedJobsPage = () => {
                 <select
                   className="form-select"
                   value={filters.sortBy}
-                  onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
+                  onChange={(e) => updateSortFilter(e.target.value)}
                 >
                   <option value="appliedDate">Recently Applied</option>
                   <option value="jobTitle">Job Title</option>
@@ -222,7 +249,7 @@ const AppliedJobsPage = () => {
               <div className="col-md-4">
                 <button
                   className="btn btn-outline-secondary w-100"
-                  onClick={() => setFilters({ status: 'all', sortBy: 'appliedDate' })}
+                  onClick={clearFilters}
                 >
                   Clear Filters
                 </button>

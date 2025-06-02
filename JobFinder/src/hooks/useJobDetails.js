@@ -1,8 +1,7 @@
-// src/pages/jobs/JobDetailsPage/hooks/useJobDetails.js
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../hooks/useAuth';
-import { useJobInteractions } from '../../../../hooks/useJobInteractions';
+import { useJobInteractions } from '../../hooks/useJobInteractions';
 import jobService from '../../../../services/jobService';
 
 export const useJobDetails = () => {
