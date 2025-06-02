@@ -8,25 +8,20 @@ import ProfessionalInfoSection from './ProfessionalInfoSection';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
-    // Personal Information
+    // Personal Information - matches backend name schema
     firstName: '',
     lastName: '',
+    middleName: '', // Optional field in backend
     email: '',
     
     // Account Information
     password: '',
     confirmPassword: '',
     
-    // Professional Information
-    role: 'jobseeker',
-    profession: '',
-    industry: '',
-    bio: '',
-    jobTypes: {},
-    preferredLocation: '',
-    companySize: '',
-    companyWebsite: '',
-    hiringTimeline: '',
+    // Professional Information - only fields that exist in backend
+    role: 'jobseeker', // enum: ["jobseeker", "recruiter", "admin"]
+    profession: '', // exists in backend
+    bio: '', // exists in backend
     
     // Terms
     agreeToTerms: false
@@ -56,47 +51,46 @@ const RegisterForm = () => {
 
     // Step 1: Personal Information
     if (stepToValidate === 1 || step === null) {
-      // First Name validation
+      // First Name validation - matches backend: minLength: 2, maxLength: 256
       if (!formData.firstName.trim()) {
         newErrors.firstName = 'First name is required';
       } else if (formData.firstName.length < 2) {
         newErrors.firstName = 'First name must be at least 2 characters';
-      } else if (formData.firstName.length > 50) {
-        newErrors.firstName = 'First name cannot exceed 50 characters';
-      } else if (!/^[a-zA-Z\s'.-]+$/.test(formData.firstName)) {
-        newErrors.firstName = 'First name can only contain letters, spaces, apostrophes, periods, and hyphens';
+      } else if (formData.firstName.length > 256) {
+        newErrors.firstName = 'First name cannot exceed 256 characters';
       }
 
-      // Last Name validation
+      // Last Name validation - matches backend: minLength: 2, maxLength: 256
       if (!formData.lastName.trim()) {
         newErrors.lastName = 'Last name is required';
       } else if (formData.lastName.length < 2) {
         newErrors.lastName = 'Last name must be at least 2 characters';
-      } else if (formData.lastName.length > 50) {
-        newErrors.lastName = 'Last name cannot exceed 50 characters';
-      } else if (!/^[a-zA-Z\s'.-]+$/.test(formData.lastName)) {
-        newErrors.lastName = 'Last name can only contain letters, spaces, apostrophes, periods, and hyphens';
+      } else if (formData.lastName.length > 256) {
+        newErrors.lastName = 'Last name cannot exceed 256 characters';
       }
 
-      // Email validation
+      // Middle Name validation - optional, maxLength: 256
+      if (formData.middleName && formData.middleName.length > 256) {
+        newErrors.middleName = 'Middle name cannot exceed 256 characters';
+      }
+
+      // Email validation - matches backend regex
       if (!formData.email.trim()) {
         newErrors.email = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      } else if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
         newErrors.email = 'Please enter a valid email address';
-      } else if (formData.email.length > 100) {
-        newErrors.email = 'Email cannot exceed 100 characters';
       }
     }
 
     // Step 2: Account Information
     if (stepToValidate === 2 || step === null) {
-      // Password validation
+      // Password validation - backend requires minLength: 6, but we'll use stronger validation
       if (!formData.password) {
         newErrors.password = 'Password is required';
+      } else if (formData.password.length < 6) {
+        newErrors.password = 'Password must be at least 6 characters';
       } else if (!passwordRegex.test(formData.password)) {
         newErrors.password = 'Password must contain at least 8 characters, one uppercase, one lowercase, 4 numbers, and a special character (!@%$#^&*-_*)';
-      } else if (formData.password.length > 128) {
-        newErrors.password = 'Password cannot exceed 128 characters';
       }
 
       // Confirm Password validation
@@ -109,27 +103,11 @@ const RegisterForm = () => {
 
     // Step 3: Professional Information & Terms
     if (stepToValidate === 3 || step === null) {
-      // Role validation
+      // Role validation - must be one of: ["jobseeker", "recruiter", "admin"]
       if (!formData.role) {
         newErrors.role = 'Please select your role';
-      }
-
-      // Bio validation (optional but if provided)
-      if (formData.bio && formData.bio.length > 500) {
-        newErrors.bio = 'Bio cannot exceed 500 characters';
-      }
-
-      // Profession validation (optional but if provided)
-      if (formData.profession && formData.profession.length > 100) {
-        newErrors.profession = 'Profession cannot exceed 100 characters';
-      }
-
-      // Company website validation (for recruiters)
-      if (formData.role === 'recruiter' && formData.companyWebsite) {
-        const urlPattern = /^https?:\/\/.+\..+/;
-        if (!urlPattern.test(formData.companyWebsite)) {
-          newErrors.companyWebsite = 'Please enter a valid website URL';
-        }
+      } else if (!['jobseeker', 'recruiter', 'admin'].includes(formData.role)) {
+        newErrors.role = 'Invalid role selected';
       }
 
       // Terms agreement validation
@@ -168,7 +146,7 @@ const RegisterForm = () => {
     setCurrentStep(prev => Math.max(1, prev - 1));
   };
 
-  // Handle form submission
+  // Handle form submission - ONLY send fields that exist in backend schema
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -180,29 +158,21 @@ const RegisterForm = () => {
     clearAuthError();
 
     try {
+      // Create user data object that EXACTLY matches backend schema
       const userData = {
         name: {
           first: formData.firstName.trim(),
+          middle: formData.middleName.trim() || "", // Optional field, default empty string
           last: formData.lastName.trim()
         },
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
-        role: formData.role,
-        profession: formData.profession.trim() || 'Not specified',
-        bio: formData.bio.trim() || 'No bio provided',
-        industry: formData.industry || undefined,
-        preferences: {
-          jobTypes: formData.jobTypes || {},
-          preferredLocation: formData.preferredLocation || undefined,
-        },
-        ...(formData.role === 'recruiter' && {
-          companyInfo: {
-            size: formData.companySize || undefined,
-            website: formData.companyWebsite || undefined,
-            hiringTimeline: formData.hiringTimeline || undefined
-          }
-        })
+        role: formData.role, // enum: ["jobseeker", "recruiter", "admin"]
+        profession: formData.profession.trim() || "Not specified", // Default matches backend
+        bio: formData.bio.trim() || "No bio provided" // Default matches backend
       };
+
+      console.log('Sending user data:', userData); // Debug log
 
       await register(userData);
       navigate('/login', { 
@@ -274,6 +244,7 @@ const RegisterForm = () => {
                     formData={formData}
                     errors={errors}
                     onChange={handleFieldChange}
+                    showMiddleName={true} // Enable middle name field
                   />
                 )}
 
@@ -295,10 +266,7 @@ const RegisterForm = () => {
                       formData={formData}
                       errors={errors}
                       onChange={handleFieldChange}
-                      showCompanyInfo={false}
-                      showSkills={false}
-                      showExperience={false}
-                      showSalaryExpectations={false}
+                      showOnlyBasicFields={true} // Only show role, profession, bio
                     />
 
                     {/* Terms and Conditions */}

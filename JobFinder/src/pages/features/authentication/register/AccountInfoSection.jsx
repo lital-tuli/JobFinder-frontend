@@ -1,4 +1,3 @@
-// src/pages/features/authentication/register/AccountInfoSection.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 import FormField from '../../../../components/common/FormField/FormField';
