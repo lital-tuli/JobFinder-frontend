@@ -43,6 +43,10 @@ const Sandbox = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [newRole, setNewRole] = useState('');
 
+  // State for delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+
   useEffect(() => {
     if (user?.isAdmin) {
       fetchStats();
@@ -124,6 +128,28 @@ const Sandbox = () => {
       fetchStats();
     } catch (err) {
       setError('Failed to update user role: ' + (err.error || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDeleteModal = (userItem) => {
+    setUserToDelete(userItem);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      setLoading(true);
+      await userService.deleteUser(userToDelete._id);
+      setSuccessMessage(`User ${userToDelete.name?.first} ${userToDelete.name?.last} deleted successfully!`);
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+      fetchStats();
+    } catch (err) {
+      setError('Failed to delete user: ' + (err.error || err.message));
     } finally {
       setLoading(false);
     }
@@ -393,6 +419,13 @@ const Sandbox = () => {
                                   disabled={userItem._id === user._id}
                                 >
                                   Change Role
+                                </button>
+                                <button 
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={() => handleOpenDeleteModal(userItem)}
+                                  disabled={userItem._id === user._id}
+                                >
+                                  Delete
                                 </button>
                               </div>
                             </td>
@@ -678,6 +711,86 @@ const Sandbox = () => {
                     </>
                   ) : (
                     'Update Role'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Delete User</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowDeleteModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {userToDelete && (
+                  <>
+                    <div className="alert alert-danger">
+                      <i className="bi bi-exclamation-triangle me-2"></i>
+                      <strong>Warning:</strong> This action cannot be undone!
+                    </div>
+                    <p>
+                      Are you sure you want to delete the following user?
+                    </p>
+                    <div className="card">
+                      <div className="card-body">
+                        <p className="mb-1">
+                          <strong>Name:</strong> {userToDelete.name?.first} {userToDelete.name?.last}
+                        </p>
+                        <p className="mb-1">
+                          <strong>Email:</strong> {userToDelete.email}
+                        </p>
+                        <p className="mb-0">
+                          <strong>Role:</strong> 
+                          <span className={`badge ms-2 ${getRoleBadgeClass(userToDelete.role)}`}>
+                            {userToDelete.role.charAt(0).toUpperCase() + userToDelete.role.slice(1)}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="alert alert-warning mt-3">
+                      <small>
+                        Deleting this user will permanently remove their account, profile data, and all associated records. 
+                        Any jobs posted by this user (if they're a recruiter) and applications will also be affected.
+                      </small>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={handleDeleteUser}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-trash me-2"></i>
+                      Delete User
+                    </>
                   )}
                 </button>
               </div>

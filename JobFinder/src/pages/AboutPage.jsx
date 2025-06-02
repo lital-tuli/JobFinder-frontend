@@ -110,88 +110,89 @@ const AboutPage = () => {
       </div>
 
       {/* Team Section */}
-      <div className="row mb-5">
-        <div className="col-12 text-center mb-4">
-          <h2 className="fw-bold">Our Team</h2>
-          <p className="text-muted">The people behind JobFinder</p>
-        </div>
+<div className="row mb-5">
+  <div className="col-12 text-center mb-4">
+    <h2 className="fw-bold">Our Team</h2>
+    <p className="text-muted">The people behind JobFinder</p>
+  </div>
 
-        <div className="col-md-3 col-sm-6 mb-4">
-          <div className="card h-100 shadow-sm border-0">
-            <div className="card-body p-4 text-center">
-              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
-                <img 
-                  src="https://randomuser.me/api/portraits/men/32.jpg" 
-                  alt="CEO" 
-                  className="img-fluid"
-                />
-              </div>
-              <h5 className="fw-bold mb-1">Alex Johnson</h5>
-              <p className="text-primary small mb-2">CEO & Co-Founder</p>
-              <p className="text-muted small mb-0">
-                Former HR executive with a passion for improving the hiring experience.
-              </p>
-            </div>
-          </div>
+  <div className="col-md-3 col-sm-6 mb-4">
+    <div className="card h-100 shadow-sm border-0">
+      <div className="card-body p-4 text-center">
+        <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+          <img 
+            src="https://randomuser.me/api/portraits/men/11.jpg" 
+            alt="CEO" 
+            className="img-fluid"
+          />
         </div>
-
-        <div className="col-md-3 col-sm-6 mb-4">
-          <div className="card h-100 shadow-sm border-0">
-            <div className="card-body p-4 text-center">
-              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
-                <img 
-                  src="https://randomuser.me/api/portraits/women/44.jpg" 
-                  alt="CTO" 
-                  className="img-fluid"
-                />
-              </div>
-              <h5 className="fw-bold mb-1">Sarah Chen</h5>
-              <p className="text-primary small mb-2">CTO & Co-Founder</p>
-              <p className="text-muted small mb-0">
-                Tech innovator focused on creating intuitive digital experiences.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-3 col-sm-6 mb-4">
-          <div className="card h-100 shadow-sm border-0">
-            <div className="card-body p-4 text-center">
-              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
-                <img 
-                  src="https://randomuser.me/api/portraits/men/75.jpg" 
-                  alt="Head of Operations" 
-                  className="img-fluid"
-                />
-              </div>
-              <h5 className="fw-bold mb-1">Michael Rivera</h5>
-              <p className="text-primary small mb-2">Head of Operations</p>
-              <p className="text-muted small mb-0">
-                Ensures JobFinder runs smoothly for all our users every day.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-3 col-sm-6 mb-4">
-          <div className="card h-100 shadow-sm border-0">
-            <div className="card-body p-4 text-center">
-              <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
-                <img 
-                  src="https://randomuser.me/api/portraits/women/65.jpg" 
-                  alt="Head of Marketing" 
-                  className="img-fluid"
-                />
-              </div>
-              <h5 className="fw-bold mb-1">Emily Taylor</h5>
-              <p className="text-primary small mb-2">Head of Marketing</p>
-              <p className="text-muted small mb-0">
-                Creative mind behind our outreach and community engagement.
-              </p>
-            </div>
-          </div>
-        </div>
+        <h5 className="fw-bold mb-1">Jordan Bright</h5>
+        <p className="text-primary small mb-2">Vision Architect</p>
+        <p className="text-muted small mb-0">
+          A big-picture thinker with a knack for turning ideas into action plans.
+        </p>
       </div>
+    </div>
+  </div>
+
+  <div className="col-md-3 col-sm-6 mb-4">
+    <div className="card h-100 shadow-sm border-0">
+      <div className="card-body p-4 text-center">
+        <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+          <img 
+            src="https://randomuser.me/api/portraits/women/22.jpg" 
+            alt="CTO" 
+            className="img-fluid"
+          />
+        </div>
+        <h5 className="fw-bold mb-1">Nova Lin</h5>
+        <p className="text-primary small mb-2">Chief Code Alchemist</p>
+        <p className="text-muted small mb-0">
+          Crafts magical digital experiences with clean and scalable code.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div className="col-md-3 col-sm-6 mb-4">
+    <div className="card h-100 shadow-sm border-0">
+      <div className="card-body p-4 text-center">
+        <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+          <img 
+            src="https://randomuser.me/api/portraits/men/48.jpg" 
+            alt="Operations" 
+            className="img-fluid"
+          />
+        </div>
+        <h5 className="fw-bold mb-1">Kai Redwood</h5>
+        <p className="text-primary small mb-2">Workflow Wizard</p>
+        <p className="text-muted small mb-0">
+          Keeps all systems humming and ensures a seamless user journey.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div className="col-md-3 col-sm-6 mb-4">
+    <div className="card h-100 shadow-sm border-0">
+      <div className="card-body p-4 text-center">
+        <div className="rounded-circle bg-light mb-3 mx-auto overflow-hidden" style={{width: "120px", height: "120px"}}>
+          <img 
+            src="https://randomuser.me/api/portraits/women/54.jpg" 
+            alt="Marketing" 
+            className="img-fluid"
+          />
+        </div>
+        <h5 className="fw-bold mb-1">Zara Moon</h5>
+        <p className="text-primary small mb-2">Brand Whisperer</p>
+        <p className="text-muted small mb-0">
+          Turns messages into movements and audiences into fans.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
 
       {/* CTA Section */}
       <div className="bg-primary text-white p-5 rounded-3 text-center">

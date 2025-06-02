@@ -8,16 +8,14 @@ const SmartSearchBar = ({
   onLocationChange,
   onSearch,
 }) => {
-  // הפעלת החיפוש בלחיצה על אנטר או על הכפתור
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
-      onSearch(searchTerm);
+      onSearch(searchTerm, location);
     }
   };
 
   return (
     <div className="d-flex flex-column flex-md-row gap-3">
-      {/* שדה מילות מפתח */}
       <input
         type="text"
         className="form-control form-control-lg"
@@ -27,8 +25,6 @@ const SmartSearchBar = ({
         onKeyDown={handleKeyDown}
         aria-label="Search jobs or keywords"
       />
-
-      {/* שדה מיקום */}
       <input
         type="text"
         className="form-control form-control-lg"
@@ -38,12 +34,10 @@ const SmartSearchBar = ({
         onKeyDown={handleKeyDown}
         aria-label="Location"
       />
-
-      {/* כפתור חיפוש */}
       <button
         className="btn btn-warning btn-lg"
         type="button"
-        onClick={() => onSearch(searchTerm)}
+        onClick={() => onSearch(searchTerm, location)}
         aria-label="Search jobs"
       >
         Search
@@ -59,6 +53,5 @@ SmartSearchBar.propTypes = {
   onLocationChange: PropTypes.func.isRequired,
   onSearch: PropTypes.func.isRequired,
 };
-
 
 export default SmartSearchBar;
