@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-const ResumeSection = ({ user, onResumeUpdate }) => {
+const ResumeSection = ({ user, onResumeUpdate, viewOnly = false }) => {
   const [resumes, setResumes] = useState(user?.resumes || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
 
-  // Update resumes when user prop changes
+  // Sync resumes when user prop changes
   useEffect(() => {
     if (user?.resumes) {
       setResumes(user.resumes);
@@ -16,14 +16,10 @@ const ResumeSection = ({ user, onResumeUpdate }) => {
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    console.log('File selected:', file); // Debug log
-    
     if (!file) return;
 
-    // Clear any previous errors
     setUploadError('');
 
-    // Validate file type
     const allowedTypes = [
       'application/pdf',
       'application/msword',
@@ -35,55 +31,41 @@ const ResumeSection = ({ user, onResumeUpdate }) => {
       return;
     }
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setUploadError('File size must be less than 10MB');
       return;
     }
 
     setUploading(true);
-    console.log('Starting file upload simulation...'); // Debug log
 
     try {
-      // Simulate file upload - in a real app, you'd upload to server/cloud storage
-      const uploadPromise = new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate success/failure (90% success rate for demo)
-          if (Math.random() > 0.1) {
-            const newResume = {
-              id: Date.now().toString(),
-              name: file.name,
-              url: URL.createObjectURL(file), // Demo URL - in production, use server URL
-              uploadedAt: new Date().toISOString(),
-              size: file.size,
-              type: file.type
-            };
-            resolve(newResume);
-          } else {
-            reject(new Error('Upload failed - please try again'));
-          }
-        }, 1500);
+      // Prepare form data for upload
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      // Replace with your actual upload API endpoint
+      const response = await fetch('/api/upload-resume', {
+        method: 'POST',
+        body: formData,
       });
 
-      const newResume = await uploadPromise;
-      console.log('Upload successful:', newResume); // Debug log
+      if (!response.ok) {
+        throw new Error('Upload failed - please try again');
+      }
+
+      const newResume = await response.json();
 
       const updatedResumes = [...resumes, newResume];
       setResumes(updatedResumes);
-      
-      // Call the callback to update parent component
+
       if (onResumeUpdate) {
-        console.log('Calling onResumeUpdate with:', updatedResumes); // Debug log
         onResumeUpdate(updatedResumes);
       }
 
-      // Clear file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-
     } catch (error) {
-      console.error('Upload error:', error);
       setUploadError(error.message || 'Upload failed - please try again');
     } finally {
       setUploading(false);
@@ -91,18 +73,22 @@ const ResumeSection = ({ user, onResumeUpdate }) => {
   };
 
   const handleRemoveResume = async (resumeId) => {
-    console.log('Removing resume:', resumeId); // Debug log
-    
     try {
+      const response = await fetch(`/api/delete-resume/${resumeId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove resume');
+      }
+
       const updatedResumes = resumes.filter(resume => resume.id !== resumeId);
       setResumes(updatedResumes);
-      
+
       if (onResumeUpdate) {
-        console.log('Calling onResumeUpdate after removal:', updatedResumes); // Debug log
         onResumeUpdate(updatedResumes);
       }
-    } catch (error) {
-      console.error('Error removing resume:', error);
+    } catch {
       setUploadError('Failed to remove resume - please try again');
     }
   };
@@ -125,7 +111,6 @@ const ResumeSection = ({ user, onResumeUpdate }) => {
   };
 
   const triggerFileInput = () => {
-    console.log('Triggering file input click'); // Debug log
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -133,9 +118,6 @@ const ResumeSection = ({ user, onResumeUpdate }) => {
 
   return (
     <div className="resume-section">
-      <h6 className="fw-semibold mb-3">Resume/CV</h6>
-      
-      {/* Error Display */}
       {uploadError && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
           <i className="bi bi-exclamation-triangle me-2"></i>
@@ -148,139 +130,170 @@ const ResumeSection = ({ user, onResumeUpdate }) => {
           ></button>
         </div>
       )}
-      
-      {/* Upload Area */}
-      <div className="upload-area mb-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.doc,.docx"
-          onChange={handleFileUpload}
-          className="d-none"
-          disabled={uploading}
-        />
-        
-        <div 
-          className={`border border-dashed rounded p-4 text-center ${uploading ? 'bg-light' : ''}`}
-          style={{ 
-            borderColor: '#dee2e6', 
-            cursor: uploading ? 'not-allowed' : 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          onClick={uploading ? undefined : triggerFileInput}
-        >
-          {uploading ? (
-            <div>
-              <div className="spinner-border text-primary mb-2" role="status">
-                <span className="visually-hidden">Uploading...</span>
-              </div>
-              <p className="text-muted mb-0">Uploading resume...</p>
-              <small className="text-muted">Please wait...</small>
-            </div>
-          ) : (
-            <div>
-              <i className="bi bi-cloud-upload text-primary fs-2 mb-2"></i>
-              <p className="mb-1">Click to upload your resume</p>
-              <small className="text-muted">PDF, DOC, DOCX (Max 10MB)</small>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Resume List */}
-      {resumes.length > 0 && (
+      {!viewOnly && (
+        <div className="upload-area mb-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={handleFileUpload}
+            className="d-none"
+            disabled={uploading}
+          />
+          <div 
+            className={`border border-dashed rounded p-4 text-center ${uploading ? 'bg-light' : ''} ${!uploading ? 'hover-effect' : ''}`}
+            style={{ 
+              borderColor: '#dee2e6', 
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            onClick={uploading ? undefined : triggerFileInput}
+          >
+            {uploading ? (
+              <div>
+                <div className="spinner-border text-primary mb-2" role="status">
+                  <span className="visually-hidden">Uploading...</span>
+                </div>
+                <p className="text-muted mb-0">Uploading resume...</p>
+                <small className="text-muted">Please wait...</small>
+              </div>
+            ) : (
+              <div>
+                <i className="bi bi-cloud-upload text-primary fs-2 mb-2"></i>
+                <p className="mb-1 fw-semibold">Click to upload your resume</p>
+                <small className="text-muted">PDF, DOC, DOCX • Max 10MB</small>
+                <br />
+                <small className="text-muted">Having an updated resume helps employers evaluate your qualifications</small>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {resumes.length > 0 ? (
         <div className="resume-list">
-          <h6 className="fw-semibold mb-2">Uploaded Resumes ({resumes.length})</h6>
-          {resumes.map(resume => (
-            <div key={resume.id} className="card mb-2">
-              <div className="card-body p-3">
-                <div className="d-flex align-items-center justify-content-between">
-                  <div className="d-flex align-items-center">
-                    <i className={`bi ${getFileIcon(resume.type)} fs-4 me-3`}></i>
-                    <div>
-                      <h6 className="mb-0">{resume.name}</h6>
-                      <small className="text-muted">
-                        {formatFileSize(resume.size)}
-                        {resume.uploadedAt && (
-                          <span className="ms-2">
-                            • Uploaded {new Date(resume.uploadedAt).toLocaleDateString()}
-                          </span>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h6 className="fw-semibold mb-0">
+              <i className="bi bi-file-earmark-text me-2"></i>
+              Uploaded Documents ({resumes.length})
+            </h6>
+            {viewOnly && (
+              <span className="badge bg-success">
+                <i className="bi bi-check-circle me-1"></i>
+                {resumes.length} Resume{resumes.length > 1 ? 's' : ''} Available
+              </span>
+            )}
+          </div>
+          <div className="row">
+            {resumes.map(resume => (
+              <div key={resume.id} className="col-md-6 mb-3">
+                <div className="card border hover-lift">
+                  <div className="card-body p-3">
+                    <div className="d-flex align-items-start justify-content-between">
+                      <div className="d-flex align-items-start">
+                        <i className={`bi ${getFileIcon(resume.type)} fs-3 me-3 mt-1`}></i>
+                        <div className="flex-grow-1">
+                          <h6 className="mb-1 fw-semibold">{resume.name}</h6>
+                          <div className="text-muted small">
+                            <div>{formatFileSize(resume.size)}</div>
+                            {resume.uploadedAt && (
+                              <div>
+                                Uploaded {new Date(resume.uploadedAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="d-flex gap-1 ms-2">
+                        <a
+                          href={resume.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline-primary btn-sm"
+                          title="View resume"
+                          onClick={(e) => {
+                            if (!resume.url || resume.url === '#') {
+                              e.preventDefault();
+                              alert('Resume preview not available');
+                            }
+                          }}
+                        >
+                          <i className="bi bi-eye"></i>
+                        </a>
+                        {!viewOnly && (
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to remove this resume?')) {
+                                handleRemoveResume(resume.id);
+                              }
+                            }}
+                            title="Remove resume"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
                         )}
-                      </small>
+                      </div>
                     </div>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <a
-                      href={resume.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-outline-primary btn-sm"
-                      title="View resume"
-                      onClick={(e) => {
-                        console.log('Viewing resume:', resume.name); // Debug log
-                        // Check if URL is valid
-                        if (!resume.url || resume.url === '#') {
-                          e.preventDefault();
-                          alert('Resume preview not available');
-                        }
-                      }}
-                    >
-                      <i className="bi bi-eye"></i>
-                    </a>
-                    <button
-                      type="button"
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to remove this resume?')) {
-                          handleRemoveResume(resume.id);
-                        }
-                      }}
-                      title="Remove resume"
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      )}
+      ) : (
+        <div className="text-center py-4">
+          <div className="card bg-light border-0">
+            <div className="card-body p-4">
+              <i className="bi bi-file-earmark text-muted fs-1 mb-3"></i>
+              <h6 className="fw-semibold mb-2">No Resume Uploaded Yet</h6>
+              <p className="text-muted mb-0 small">
+                {viewOnly 
+                  ? "This user hasn't uploaded a resume yet."
+                  : "Upload your resume to make job applications faster and help employers evaluate your qualifications."
+                }
+              </p>
+              {!viewOnly && (
+                <button 
+                  className="btn btn-primary btn-sm mt-3"
+                  onClick={triggerFileInput}
+                  disabled={uploading}
+                >
+                 
 
-      {resumes.length === 0 && !uploading && (
-        <div className="text-center py-3">
-          <i className="bi bi-file-earmark text-muted fs-2 mb-2"></i>
-          <p className="text-muted mb-0">No resumes uploaded yet</p>
-          <small className="text-muted">Upload your resume to get started</small>
-        </div>
-      )}
 
-      {/* Debug info in development */}
-      {import.meta.env.DEV && (
-        <div className="mt-3 p-2 bg-light rounded">
-          <small className="text-muted">
-            <strong>Debug:</strong> Resumes count: {resumes.length}, Uploading: {uploading.toString()}
-            <br />
-            onResumeUpdate callback: {onResumeUpdate ? 'Available' : 'Missing'}
-          </small>
-        </div>
-      )}
-    </div>
-  );
+
+
+<i className="bi bi-upload me-1"></i> Upload Resume
+</button>
+)}
+</div>
+</div>
+</div>
+)}
+</div>
+);
 };
 
 ResumeSection.propTypes = {
-  user: PropTypes.shape({
-    resumes: PropTypes.arrayOf(PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-      name: PropTypes.string,
-      url: PropTypes.string,
-      uploadedAt: PropTypes.string,
-      size: PropTypes.number,
-      type: PropTypes.string
-    }))
-  }),
-  onResumeUpdate: PropTypes.func.isRequired
+user: PropTypes.shape({
+resumes: PropTypes.arrayOf(PropTypes.shape({
+id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+name: PropTypes.string,
+url: PropTypes.string,
+uploadedAt: PropTypes.string,
+size: PropTypes.number,
+type: PropTypes.string
+}))
+}),
+onResumeUpdate: PropTypes.func.isRequired,
+viewOnly: PropTypes.bool
 };
 
 export default ResumeSection;

@@ -3,6 +3,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import ProfileForm from '../components/profile/ProfileForm';
+import ResumeSection from '../components/resume/ResumeSection';
 import ProfileDisplay from '../components/profile/ProfileDisplay';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/messages/ErrorMessage';
@@ -16,26 +17,22 @@ const ProfilePage = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
-  // Use ref to track timer to prevent cleanup issues
+  const [resumes, setResumes] = useState(user?.resumes || []);
   const successTimerRef = useRef(null);
 
-  // Memoize handlers to prevent unnecessary re-renders
   const handleEdit = useCallback(() => {
-    console.log('🔥 Edit button clicked!');
     setIsEditing(true);
     setError('');
     setSuccessMessage('');
   }, []);
 
   const handleCancel = useCallback(() => {
-    console.log('🔥 Cancel button clicked!');
     setIsEditing(false);
     setError('');
     setSuccessMessage('');
   }, []);
 
   const handleSave = useCallback(async (profileData) => {
-    console.log('🔥 Save function called with:', profileData);
     setLoading(true);
     setError('');
     setSuccessMessage('');
@@ -45,7 +42,6 @@ const ProfilePage = () => {
       setIsEditing(false);
       setSuccessMessage('Profile updated successfully!');
       
-      // Clear success message after 5 seconds
       if (successTimerRef.current) {
         clearTimeout(successTimerRef.current);
       }
@@ -54,14 +50,36 @@ const ProfilePage = () => {
       }, 5000);
       
     } catch (err) {
-      console.error('Profile update error:', err);
       setError(err.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
   }, [updateProfile]);
 
-  // Clear error messages
+  const handleResumeUpdate = async (updatedResumes) => {
+    setResumes(updatedResumes);
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      await updateProfile({ ...user, resumes: updatedResumes });
+      setSuccessMessage('Resumes updated successfully!');
+      
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+      
+    } catch (err) {
+      setError(err.message || 'Failed to update resumes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const clearError = useCallback(() => {
     setError('');
   }, []);
@@ -73,7 +91,6 @@ const ProfilePage = () => {
     }
   }, []);
 
-  // Cleanup timer on unmount
   React.useEffect(() => {
     return () => {
       if (successTimerRef.current) {
@@ -82,7 +99,6 @@ const ProfilePage = () => {
     };
   }, []);
 
-  // Show loading spinner while checking authentication
   if (authLoading) {
     return (
       <div className="container py-5">
@@ -91,7 +107,6 @@ const ProfilePage = () => {
     );
   }
 
-  // Redirect non-authenticated users
   if (!isAuthenticated) {
     return (
       <div className="container py-5">
@@ -122,7 +137,6 @@ const ProfilePage = () => {
     );
   }
 
-  // Show error if user data is not available
   if (!user) {
     return (
       <div className="container py-5">
@@ -142,7 +156,6 @@ const ProfilePage = () => {
     <div className="container py-5">
       <div className="row justify-content-center">
         <div className="col-lg-8">
-          {/* Success Message */}
           {successMessage && (
             <SuccessMessage 
               message={successMessage} 
@@ -151,7 +164,6 @@ const ProfilePage = () => {
             />
           )}
 
-          {/* Error Message */}
           {error && (
             <ErrorMessage 
               error={error} 
@@ -160,9 +172,7 @@ const ProfilePage = () => {
             />
           )}
 
-          {/* Profile Card */}
           <div className="card shadow-sm border-0">
-            {/* Card Header */}
             <div className="card-header bg-white py-3">
               <div className="d-flex justify-content-between align-items-center">
                 <h2 className="mb-0">
@@ -170,7 +180,6 @@ const ProfilePage = () => {
                   {isEditing ? 'Edit Profile' : 'My Profile'}
                 </h2>
                 
-                {/* Action Buttons */}
                 {!isEditing ? (
                   <button 
                     className="btn btn-primary"
@@ -195,7 +204,6 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Card Body */}
             <div className="card-body p-4">
               {isEditing ? (
                 <ProfileForm 
@@ -205,12 +213,19 @@ const ProfilePage = () => {
                   loading={loading}
                 />
               ) : (
-                <ProfileDisplay user={user} />
+                <>
+                  <ProfileDisplay user={user} />
+
+                  <ResumeSection
+                    resumes={resumes}
+                    onUpdate={handleResumeUpdate}
+                    loading={loading}
+                  />
+                </>
               )}
             </div>
           </div>
 
-          {/* Quick Navigation Links */}
           {!isEditing && user?.role === 'jobseeker' && (
             <div className="row mt-4">
               <div className="col-md-4 mb-3">
@@ -234,7 +249,6 @@ const ProfilePage = () => {
             </div>
           )}
 
-          {/* Recruiter Quick Links */}
           {!isEditing && user?.role === 'recruiter' && (
             <div className="row mt-4">
               <div className="col-md-6 mb-3">
