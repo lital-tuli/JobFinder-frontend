@@ -1,4 +1,4 @@
-// ProfilePage.jsx - Simplified without user stats
+// ProfilePage.jsx - Fixed version with debugging
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import ProfileForm from '../components/profile/ProfileForm';
@@ -16,6 +16,11 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Debug logging
+  useEffect(() => {
+    console.log('ProfilePage state:', { isEditing, saving, user: !!user, isAuthenticated });
+  }, [isEditing, saving, user, isAuthenticated]);
 
   const clearMessages = () => {
     setError('');
@@ -35,21 +40,34 @@ const ProfilePage = () => {
   }, [successMessage]);
 
   const handleEditClick = () => {
+    console.log('Edit button clicked'); // Debug log
     setIsEditing(true);
     clearMessages();
   };
 
   const handleCancel = () => {
+    console.log('Cancel clicked'); // Debug log
     setIsEditing(false);
     clearMessages();
   };
 
   const handleSave = async (profileData) => {
+    console.log('Save initiated with data:', profileData); // Debug log
+    
     const { name, email } = profileData;
 
-    if (!name?.first?.trim()) return setError('First name is required');
-    if (!name?.last?.trim()) return setError('Last name is required');
-    if (!email?.trim()) return setError('Email is required');
+    if (!name?.first?.trim()) {
+      setError('First name is required');
+      return;
+    }
+    if (!name?.last?.trim()) {
+      setError('Last name is required');
+      return;
+    }
+    if (!email?.trim()) {
+      setError('Email is required');
+      return;
+    }
 
     setSaving(true);
     clearMessages();
@@ -58,6 +76,7 @@ const ProfilePage = () => {
       await updateProfile(profileData);
       setIsEditing(false);
       setSuccessMessage('Profile updated successfully!');
+      console.log('Profile updated successfully'); // Debug log
       
     } catch (err) {
       console.error('Update failed:', err);
@@ -68,20 +87,32 @@ const ProfilePage = () => {
   };
 
   const handleResumeUpdate = async (resumes) => {
-    if (!user) return setError('User data not available');
+    console.log('Resume update initiated with:', resumes); // Debug log
+    
+    if (!user) {
+      setError('User data not available');
+      return;
+    }
 
     setSaving(true);
     clearMessages();
 
     try {
-      await updateProfile({ ...user, resumes });
+      const updatedUserData = { ...user, resumes };
+      await updateProfile(updatedUserData);
       setSuccessMessage('Resume updated successfully!');
+      console.log('Resume updated successfully'); // Debug log
     } catch (err) {
       console.error('Resume update failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to update resume');
     } finally {
       setSaving(false);
     }
+  };
+
+  // Enhanced click handler for debugging navigation
+  const handleNavigationClick = (path) => {
+    console.log('Navigation clicked to:', path);
   };
 
   if (authLoading) {
@@ -131,6 +162,13 @@ const ProfilePage = () => {
     <div className="container py-5">
       <div className="row">
         <div className="col-lg-8 mx-auto">
+          {/* Debug Info - Remove in production */}
+          {import.meta.env.DEV && (
+            <div className="alert alert-info small mb-3">
+              <strong>Debug:</strong> isEditing: {isEditing.toString()}, saving: {saving.toString()}
+            </div>
+          )}
+
           {/* Messages */}
           {successMessage && (
             <SuccessMessage 
@@ -162,6 +200,7 @@ const ProfilePage = () => {
                     className="btn btn-primary" 
                     onClick={handleEditClick} 
                     disabled={saving}
+                    style={{ minWidth: '120px' }} // Prevent button resize
                   >
                     {saving ? (
                       <>
@@ -213,12 +252,15 @@ const ProfilePage = () => {
                 </h5>
               </div>
               <div className="card-body p-4">
-                <ResumeSection user={user} onResumeUpdate={handleResumeUpdate} />
+                <ResumeSection 
+                  user={user} 
+                  onResumeUpdate={handleResumeUpdate}
+                />
               </div>
             </div>
           )}
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Enhanced for debugging */}
           {!isEditing && (
             <div className="card shadow-sm border-0 mt-4">
               <div className="card-body p-4">
@@ -228,24 +270,57 @@ const ProfilePage = () => {
                 </h5>
                 <div className="row">
                   <div className="col-md-4 mb-3">
-                    <Link to="/saved-jobs" className="btn btn-outline-primary w-100">
+                    <Link 
+                      to="/saved-jobs" 
+                      className="btn btn-outline-primary w-100"
+                      onClick={() => handleNavigationClick('/saved-jobs')}
+                    >
                       <i className="bi bi-bookmark me-2"></i>
                       Saved Jobs
                     </Link>
                   </div>
                   <div className="col-md-4 mb-3">
-                    <Link to="/applied-jobs" className="btn btn-outline-success w-100">
+                    <Link 
+                      to="/applied-jobs" 
+                      className="btn btn-outline-success w-100"
+                      onClick={() => handleNavigationClick('/applied-jobs')}
+                    >
                       <i className="bi bi-briefcase me-2"></i>
                       Applications
                     </Link>
                   </div>
                   <div className="col-md-4 mb-3">
-                    <Link to="/jobs" className="btn btn-outline-info w-100">
+                    <Link 
+                      to="/jobs" 
+                      className="btn btn-outline-info w-100"
+                      onClick={() => handleNavigationClick('/jobs')}
+                    >
                       <i className="bi bi-search me-2"></i>
                       Find Jobs
                     </Link>
                   </div>
                 </div>
+                
+                {/* Additional debug buttons */}
+                {import.meta.env.DEV && (
+                  <div className="mt-3 pt-3 border-top">
+                    <small className="text-muted d-block mb-2">Debug Actions:</small>
+                    <div className="d-flex gap-2">
+                      <button 
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => console.log('Current user:', user)}
+                      >
+                        Log User Data
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setIsEditing(!isEditing)}
+                      >
+                        Toggle Edit Mode
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
