@@ -81,7 +81,7 @@ const ProfilePage = () => {
     clearMessages();
   };
 
-  const handleSave = async (profileData) => {
+    const handleSave = async (profileData) => {
     const { name, email } = profileData;
 
     if (!name?.first?.trim()) return setError('First name is required');
@@ -95,7 +95,6 @@ const ProfilePage = () => {
       await updateProfile(profileData);
       setIsEditing(false);
       setSuccessMessage('Profile updated successfully!');
-      fetchUserStats();
     } catch (err) {
       console.error('Update failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to update profile.');

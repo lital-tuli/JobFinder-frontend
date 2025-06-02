@@ -2,3 +2,58 @@
   background: linear-gradient(to right, rgba(255, 107, 0, 0.05), rgba(255, 107, 0, 0.1));
   padding: 5rem 0;
 }
+        @keyframes heroFloat {
+            0%, 100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-20px);
+            }
+          }
+
+          @keyframes heroRotate {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          .hero-cta-btn:hover,
+          .hero-search-btn:hover,
+          .hero-quick-search-btn:hover {
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+          }
+
+          .hero-floating-card {
+            transition: all 0.3s ease;
+          }
+
+          .hero-floating-card:hover {
+            transform: translateY(-2px);
+          }
+
+          .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+          }
+
+          @media (max-width: 768px) {
+            .hero-section {
+              min-height: 90vh;
+            }
+            
+            .hero-floating-card {
+              max-width: 150px !important;
+            }
+            
+            .hero-floating-card h6 {
+              font-size: 0.8rem;
+            }
+            
+            .hero-floating-card small {
+              font-size: 0.7rem;
+            }
+          }
