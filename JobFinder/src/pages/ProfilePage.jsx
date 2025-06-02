@@ -19,9 +19,6 @@ const ProfilePage = () => {
   const [appliedJobsCount, setAppliedJobsCount] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Debug logging
-  console.log('ProfilePage render - isEditing:', isEditing, 'loading:', loading, 'authLoading:', authLoading);
-
   // Fetch additional user stats
   useEffect(() => {
     const fetchUserStats = async () => {
@@ -48,22 +45,15 @@ const ProfilePage = () => {
     fetchUserStats();
   }, [isAuthenticated, user, refreshKey]);
 
-  // Improved edit handler with better error handling and debugging
+  // Fixed: Remove isEditing from dependencies to prevent infinite loop
   const handleEditClick = useCallback(() => {
-    console.log('Edit button clicked - Current isEditing:', isEditing);
-    
-    try {
-      setIsEditing(true);
-      setError('');
-      setSuccessMessage('');
-      console.log('Edit mode activated');
-    } catch (err) {
-      console.error('Error in handleEditClick:', err);
-      setError('Failed to enter edit mode');
-    }
-  }, [isEditing]);
+    console.log('Edit button clicked');
+    setIsEditing(true);
+    setError('');
+    setSuccessMessage('');
+  }, []); // Empty dependency array
 
-  const handleSave = async (profileData) => {
+  const handleSave = useCallback(async (profileData) => {
     console.log('Saving profile data:', profileData);
     setLoading(true);
     setError('');
@@ -94,7 +84,7 @@ const ProfilePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [updateProfile]);
 
   const handleCancel = useCallback(() => {
     console.log('Cancel button clicked');
@@ -103,7 +93,7 @@ const ProfilePage = () => {
     setSuccessMessage('');
   }, []);
 
-  const handleResumeUpdate = async (resumes) => {
+  const handleResumeUpdate = useCallback(async (resumes) => {
     try {
       const updatedProfile = {
         ...user,
@@ -115,16 +105,7 @@ const ProfilePage = () => {
     } catch (error) {
       setError(error.message || 'Failed to update resume');
     }
-  };
-
-  // Enhanced button click handler for debugging
-  const debugEditClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Button clicked! Event:', e);
-    console.log('Current state - isEditing:', isEditing, 'loading:', loading);
-    handleEditClick();
-  };
+  }, [user, updateProfile]);
 
   // Loading state
   if (authLoading) {
@@ -179,15 +160,6 @@ const ProfilePage = () => {
     <div className="container py-5">
       <div className="row">
         <div className="col-lg-8 mx-auto">
-          {/* Debug Info - Remove in production */}
-          {import.meta.env.DEV && (
-            <div className="alert alert-info mb-3">
-              <small>
-                Debug: isEditing={isEditing.toString()}, loading={loading.toString()}, authLoading={authLoading.toString()}
-              </small>
-            </div>
-          )}
-
           {/* Success Message */}
           {successMessage && (
             <SuccessMessage 
@@ -232,58 +204,36 @@ const ProfilePage = () => {
               
               <div className="d-flex gap-2">
                 {!isEditing && (
-                  <>
-                    {/* Primary edit button */}
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={debugEditClick}
-                      disabled={loading || authLoading}
-                      style={{ 
-                        cursor: loading || authLoading ? 'not-allowed' : 'pointer',
-                        opacity: loading || authLoading ? 0.6 : 1
-                      }}
-                    >
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-pencil me-2"></i>
-                          Edit Profile
-                        </>
-                      )}
-                    </button>
-
-                    {/* Alternative edit button for testing */}
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => {
-                        console.log('Alternative edit button clicked');
-                        setIsEditing(prev => !prev);
-                      }}
-                      title="Alternative edit toggle (for testing)"
-                    >
-                      <i className="bi bi-gear"></i>
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleEditClick}
+                    disabled={loading || authLoading}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-pencil me-2"></i>
+                        Edit Profile
+                      </>
+                    )}
+                  </button>
                 )}
 
                 {isEditing && (
-                  <div className="d-flex gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={handleCancel}
-                      disabled={loading}
-                    >
-                      <i className="bi bi-x-circle me-1"></i>
-                      Cancel
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={handleCancel}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-x-circle me-1"></i>
+                    Cancel
+                  </button>
                 )}
               </div>
             </div>
@@ -348,52 +298,6 @@ const ProfilePage = () => {
                         A professional profile picture makes your profile more trustworthy and engaging.
                       </p>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Debug Panel - Remove in production */}
-          {import.meta.env.DEV && (
-            <div className="mt-4">
-              <div className="card border-warning">
-                <div className="card-header bg-warning bg-opacity-25">
-                  <h6 className="mb-0">Debug Panel (Development Only)</h6>
-                </div>
-                <div className="card-body">
-                  <p><strong>Current State:</strong></p>
-                  <ul className="mb-3">
-                    <li>isEditing: {isEditing.toString()}</li>
-                    <li>loading: {loading.toString()}</li>
-                    <li>authLoading: {authLoading.toString()}</li>
-                    <li>user exists: {user ? 'yes' : 'no'}</li>
-                    <li>isAuthenticated: {isAuthenticated.toString()}</li>
-                  </ul>
-                  <div className="d-flex gap-2">
-                    <button 
-                      className="btn btn-warning btn-sm"
-                      onClick={() => {
-                        console.log('Force toggle isEditing');
-                        setIsEditing(prev => !prev);
-                      }}
-                    >
-                      Force Toggle Edit
-                    </button>
-                    <button 
-                      className="btn btn-info btn-sm"
-                      onClick={() => {
-                        console.log('Current component state:', {
-                          isEditing,
-                          loading,
-                          authLoading,
-                          user: !!user,
-                          isAuthenticated
-                        });
-                      }}
-                    >
-                      Log State
-                    </button>
                   </div>
                 </div>
               </div>
