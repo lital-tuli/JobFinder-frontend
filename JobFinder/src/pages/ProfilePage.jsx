@@ -1,5 +1,5 @@
-// src/pages/ProfilePage.jsx - Simplified version
-import { useState, useEffect } from 'react';
+import React from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import ProfileForm from '../components/profile/ProfileForm';
@@ -15,30 +15,27 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Use ref to track timer to prevent cleanup issues
+  const successTimerRef = useRef(null);
 
-  // Clear messages when switching between view/edit modes
-  useEffect(() => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleEdit = useCallback(() => {
+    console.log('🔥 Edit button clicked!');
+    setIsEditing(true);
     setError('');
     setSuccessMessage('');
-  }, [isEditing]);
+  }, []);
 
-  // Auto-clear success message after 5 seconds
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
+    console.log('🔥 Cancel button clicked!');
     setIsEditing(false);
-  };
+    setError('');
+    setSuccessMessage('');
+  }, []);
 
-  const handleSave = async (profileData) => {
+  const handleSave = useCallback(async (profileData) => {
+    console.log('🔥 Save function called with:', profileData);
     setLoading(true);
     setError('');
     setSuccessMessage('');
@@ -47,12 +44,43 @@ const ProfilePage = () => {
       await updateProfile(profileData);
       setIsEditing(false);
       setSuccessMessage('Profile updated successfully!');
+      
+      // Clear success message after 5 seconds
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+      
     } catch (err) {
+      console.error('Profile update error:', err);
       setError(err.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
-  };
+  }, [updateProfile]);
+
+  // Clear error messages
+  const clearError = useCallback(() => {
+    setError('');
+  }, []);
+
+  const clearSuccessMessage = useCallback(() => {
+    setSuccessMessage('');
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+    }
+  }, []);
+
+  // Cleanup timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+    };
+  }, []);
 
   // Show loading spinner while checking authentication
   if (authLoading) {
@@ -118,7 +146,7 @@ const ProfilePage = () => {
           {successMessage && (
             <SuccessMessage 
               message={successMessage} 
-              onDismiss={() => setSuccessMessage('')}
+              onDismiss={clearSuccessMessage}
               className="mb-4"
             />
           )}
@@ -127,7 +155,7 @@ const ProfilePage = () => {
           {error && (
             <ErrorMessage 
               error={error} 
-              onDismiss={() => setError('')}
+              onDismiss={clearError}
               className="mb-4"
             />
           )}
@@ -148,6 +176,7 @@ const ProfilePage = () => {
                     className="btn btn-primary"
                     onClick={handleEdit}
                     disabled={loading}
+                    type="button"
                   >
                     <i className="bi bi-pencil me-2"></i>
                     Edit Profile
@@ -157,6 +186,7 @@ const ProfilePage = () => {
                     className="btn btn-outline-secondary"
                     onClick={handleCancel}
                     disabled={loading}
+                    type="button"
                   >
                     <i className="bi bi-x-circle me-2"></i>
                     Cancel
