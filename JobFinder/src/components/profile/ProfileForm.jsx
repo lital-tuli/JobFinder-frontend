@@ -15,17 +15,14 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
     website: '',
     linkedin: '',
     github: '',
-    profilePicture: null,
-    resumes: []
+    profilePicture: null
   });
 
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
   const [uploadingPicture, setUploadingPicture] = useState(false);
-  const [uploadingResume, setUploadingResume] = useState(false);
   
   const fileInputRef = useRef(null);
-  const resumeInputRef = useRef(null);
 
   // Initialize form data when user prop changes
   useEffect(() => {
@@ -41,8 +38,7 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
         website: user.website || '',
         linkedin: user.linkedin || '',
         github: user.github || '',
-        profilePicture: user.profilePicture || null,
-        resumes: user.resumes || []
+        profilePicture: user.profilePicture || null
       });
       setErrors({});
       setIsDirty(false);
@@ -172,79 +168,6 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
     }
   };
 
-  const handleResumeUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Validate file type
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      setErrors(prev => ({ ...prev, resume: 'Please select a PDF or Word document' }));
-      return;
-    }
-
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, resume: 'Resume size must be less than 10MB' }));
-      return;
-    }
-
-    setUploadingResume(true);
-    setErrors(prev => ({ ...prev, resume: '' }));
-
-    try {
-      // Create new resume object
-      const newResume = {
-        id: Date.now().toString(),
-        name: file.name,
-        url: URL.createObjectURL(file), // This is a demo - in production, upload to server
-        uploadedAt: new Date().toISOString(),
-        size: file.size,
-        type: file.type
-      };
-
-      const updatedResumes = [...formData.resumes, newResume];
-      handleInputChange('resumes', updatedResumes);
-
-      // Clear file input
-      if (resumeInputRef.current) {
-        resumeInputRef.current.value = '';
-      }
-    } catch (error) {
-      console.error('Error uploading resume:', error);
-      setErrors(prev => ({ ...prev, resume: 'Failed to upload resume' }));
-    } finally {
-      setUploadingResume(false);
-    }
-  };
-
-  const removeResume = (resumeId) => {
-    const updatedResumes = formData.resumes.filter(resume => resume.id !== resumeId);
-    handleInputChange('resumes', updatedResumes);
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getFileIcon = (type) => {
-    if (type === 'application/pdf') {
-      return 'bi-file-earmark-pdf text-danger';
-    } else if (type.includes('word')) {
-      return 'bi-file-earmark-word text-primary';
-    }
-    return 'bi-file-earmark text-secondary';
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -252,7 +175,7 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
       return;
     }
 
-    // Prepare profile data
+    // Prepare profile data (without resumes)
     const profileData = {
       name: {
         first: formData.firstName.trim(),
@@ -266,8 +189,7 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
       website: formData.website.trim() || undefined,
       linkedin: formData.linkedin.trim() || undefined,
       github: formData.github.trim() || undefined,
-      profilePicture: formData.profilePicture,
-      resumes: formData.resumes
+      profilePicture: formData.profilePicture
     };
 
     // Remove undefined values
@@ -525,101 +447,6 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
             />
           </div>
         </div>
-      </div>
-
-      {/* Resume Section */}
-      <div className="resume-section mb-4">
-        <h6 className="fw-semibold mb-3">
-          <i className="bi bi-file-earmark-text me-2"></i>
-          Resume/CV
-        </h6>
-        
-        <div className="upload-area mb-3">
-          <input
-            ref={resumeInputRef}
-            type="file"
-            accept=".pdf,.doc,.docx"
-            onChange={handleResumeUpload}
-            className="d-none"
-            disabled={uploadingResume || loading}
-          />
-
-          <div
-            className="border border-dashed rounded p-4 text-center"
-            style={{
-              backgroundColor: '#f8f9fa',
-              cursor: uploadingResume || loading ? 'not-allowed' : 'pointer',
-              opacity: uploadingResume || loading ? 0.6 : 1
-            }}
-            onClick={() => !uploadingResume && !loading && resumeInputRef.current?.click()}
-          >
-            {uploadingResume ? (
-              <div>
-                <LoadingSpinner size="sm" className="mb-2" />
-                <p className="mb-1">Uploading resume...</p>
-              </div>
-            ) : (
-              <div>
-                <i className="bi bi-cloud-upload fs-1 text-muted mb-2"></i>
-                <p className="mb-1">Click to upload resume</p>
-                <small className="text-muted">PDF, DOC, DOCX (max 10MB)</small>
-              </div>
-            )}
-          </div>
-          
-          {errors.resume && (
-            <div className="text-danger small mt-2">{errors.resume}</div>
-          )}
-        </div>
-
-        {/* Resume List */}
-        {formData.resumes.length > 0 && (
-          <div className="uploaded-resumes">
-            <h6 className="fw-semibold mb-2">Uploaded Resumes</h6>
-            {formData.resumes.map((resume) => (
-              <div key={resume.id} className="card mb-2">
-                <div className="card-body p-3">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <div className="d-flex align-items-center">
-                      <i className={`bi ${getFileIcon(resume.type)} fs-4 me-3`}></i>
-                      <div>
-                        <h6 className="mb-0">{resume.name}</h6>
-                        <small className="text-muted">
-                          {formatFileSize(resume.size)}
-                          {resume.uploadedAt && (
-                            <span className="ms-2">
-                              • Uploaded {new Date(resume.uploadedAt).toLocaleDateString()}
-                            </span>
-                          )}
-                        </small>
-                      </div>
-                    </div>
-                    <div className="d-flex gap-2">
-                      <a
-                        href={resume.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-outline-primary btn-sm"
-                        title="View resume"
-                      >
-                        <i className="bi bi-eye"></i>
-                      </a>
-                      <button
-                        type="button"
-                        className="btn btn-outline-danger btn-sm"
-                        onClick={() => removeResume(resume.id)}
-                        title="Remove resume"
-                        disabled={loading}
-                      >
-                        <i className="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Form Actions */}

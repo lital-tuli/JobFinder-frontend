@@ -1,3 +1,4 @@
+// ProfilePage.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import ProfileForm from '../components/profile/ProfileForm';
@@ -8,130 +9,141 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/messages/ErrorMessage';
 import SuccessMessage from '../components/common/messages/SuccessMessage';
 import userService from '../services/userService';
+import { Link } from 'react-router-dom';
 
 const ProfilePage = () => {
   const { user, updateProfile, isAuthenticated, loading: authLoading } = useAuth();
+
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [savedJobsCount, setSavedJobsCount] = useState(0);
-  const [appliedJobsCount, setAppliedJobsCount] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch additional user stats
+  const [userStats, setUserStats] = useState({
+    savedJobsCount: 0,
+    appliedJobsCount: 0,
+    loading: false,
+    errorMessage: null
+  });
+
+  const clearMessages = () => {
+    setError('');
+    setSuccessMessage('');
+  };
+
   useEffect(() => {
-    const fetchUserStats = async () => {
-      if (!isAuthenticated || !user) return;
+    clearMessages();
+  }, [isEditing]);
 
-      try {
-        const [savedJobs, appliedJobs] = await Promise.allSettled([
-          userService.getSavedJobs(),
-          userService.getAppliedJobs()
-        ]);
+  const fetchUserStats = useCallback(async () => {
+    if (!isAuthenticated || !user?.email) return;
 
-        if (savedJobs.status === 'fulfilled') {
-          setSavedJobsCount(Array.isArray(savedJobs.value) ? savedJobs.value.length : 0);
-        }
-
-        if (appliedJobs.status === 'fulfilled') {
-          setAppliedJobsCount(Array.isArray(appliedJobs.value) ? appliedJobs.value.length : 0);
-        }
-      } catch (err) {
-        console.error('Failed to fetch user stats:', err);
-      }
-    };
-
-    fetchUserStats();
-  }, [isAuthenticated, user, refreshKey]);
-
-  // Fixed: Remove isEditing from dependencies to prevent infinite loop
-  const handleEditClick = useCallback(() => {
-    console.log('Edit button clicked');
-    setIsEditing(true);
-    setError('');
-    setSuccessMessage('');
-  }, []); // Empty dependency array
-
-  const handleSave = useCallback(async (profileData) => {
-    console.log('Saving profile data:', profileData);
-    setLoading(true);
-    setError('');
-    setSuccessMessage('');
-    
+    setUserStats(prev => ({ ...prev, loading: true, errorMessage: null }));
     try {
-      // Validate required fields
-      if (!profileData.name?.first?.trim()) {
-        throw new Error('First name is required');
-      }
-      if (!profileData.name?.last?.trim()) {
-        throw new Error('Last name is required');
-      }
-      if (!profileData.email?.trim()) {
-        throw new Error('Email is required');
-      }
+      const [savedJobsResult, appliedJobsResult] = await Promise.allSettled([
+        userService.getSavedJobs(),
+        userService.getAppliedJobs()
+      ]);
 
+      const savedJobsCount = savedJobsResult.status === 'fulfilled' && Array.isArray(savedJobsResult.value) ? savedJobsResult.value.length : 0;
+      const appliedJobsCount = appliedJobsResult.status === 'fulfilled' && Array.isArray(appliedJobsResult.value) ? appliedJobsResult.value.length : 0;
+
+      setUserStats({
+        savedJobsCount,
+        appliedJobsCount,
+        loading: false,
+        errorMessage: null
+      });
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
+      setUserStats(prev => ({ ...prev, loading: false, errorMessage: 'Failed to load statistics' }));
+    }
+  }, [isAuthenticated, user?.email]);
+
+  useEffect(() => {
+    fetchUserStats();
+  }, [fetchUserStats]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    clearMessages();
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    clearMessages();
+  };
+
+  const handleSave = async (profileData) => {
+    const { name, email } = profileData;
+
+    if (!name?.first?.trim()) return setError('First name is required');
+    if (!name?.last?.trim()) return setError('Last name is required');
+    if (!email?.trim()) return setError('Email is required');
+
+    setSaving(true);
+    clearMessages();
+
+    try {
       await updateProfile(profileData);
       setIsEditing(false);
       setSuccessMessage('Profile updated successfully!');
-      setRefreshKey(prev => prev + 1); // Trigger stats refresh
-      
-      // Auto-hide success message
-      setTimeout(() => setSuccessMessage(''), 5000);
-    } catch (error) {
-      console.error('Profile update failed:', error);
-      setError(error.message || 'Failed to update profile');
+      fetchUserStats();
+    } catch (err) {
+      console.error('Update failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update profile.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
-  }, [updateProfile]);
+  };
 
-  const handleCancel = useCallback(() => {
-    console.log('Cancel button clicked');
-    setIsEditing(false);
-    setError('');
-    setSuccessMessage('');
-  }, []);
+  const handleResumeUpdate = async (resumes) => {
+    if (!user) return setError('User data not available');
 
-  const handleResumeUpdate = useCallback(async (resumes) => {
+    setSaving(true);
+    clearMessages();
+
     try {
-      const updatedProfile = {
-        ...user,
-        resumes
-      };
-      await updateProfile(updatedProfile);
+      await updateProfile({ ...user, resumes });
       setSuccessMessage('Resume updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      setError(error.message || 'Failed to update resume');
+    } catch (err) {
+      console.error('Resume update failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update resume');
+    } finally {
+      setSaving(false);
     }
-  }, [user, updateProfile]);
+  };
 
-  // Loading state
   if (authLoading) {
     return (
       <div className="container py-5">
-        <LoadingSpinner 
-          size="lg" 
-          message="Loading your profile..." 
-          className="py-5"
-        />
+        <LoadingSpinner size="lg" message="Loading your profile..." className="py-5" />
       </div>
     );
   }
 
-  // Not authenticated
   if (!isAuthenticated) {
     return (
       <div className="container py-5">
         <div className="row justify-content-center">
           <div className="col-md-8">
             <div className="alert alert-warning text-center">
-              <h4>Access Denied</h4>
-              <p>Please log in to view your profile.</p>
+              <h4><i className="bi bi-shield-exclamation me-2"></i>Access Denied</h4>
+              <p className="mb-3">Please log in to view your profile.</p>
               <div className="d-flex justify-content-center gap-2">
-                <a href="/login" className="btn btn-primary">Sign In</a>
-                <a href="/register" className="btn btn-outline-primary">Create Account</a>
+                <Link to="/login" className="btn btn-primary">
+                  <i className="bi bi-box-arrow-in-right me-1"></i>Sign In
+                </Link>
+                <Link to="/register" className="btn btn-outline-primary">
+                  <i className="bi bi-person-plus me-1"></i>Create Account
+                </Link>
               </div>
             </div>
           </div>
@@ -140,16 +152,12 @@ const ProfilePage = () => {
     );
   }
 
-  // No user data
   if (!user) {
     return (
       <div className="container py-5">
         <div className="row justify-content-center">
           <div className="col-md-8">
-            <ErrorMessage 
-              error="Unable to load user profile. Please try refreshing the page."
-              type="warning"
-            />
+            <ErrorMessage error="Unable to load user profile. Please try refreshing the page." type="warning" />
           </div>
         </div>
       </div>
@@ -160,146 +168,61 @@ const ProfilePage = () => {
     <div className="container py-5">
       <div className="row">
         <div className="col-lg-8 mx-auto">
-          {/* Success Message */}
-          {successMessage && (
-            <SuccessMessage 
-              message={successMessage} 
-              onDismiss={() => setSuccessMessage('')}
-              className="mb-4"
-            />
-          )}
+          {successMessage && <SuccessMessage message={successMessage} onDismiss={() => setSuccessMessage('')} className="mb-4" />}
+          {error && <ErrorMessage error={error} onDismiss={() => setError('')} className="mb-4" />}
 
-          {/* Error Message */}
-          {error && (
-            <ErrorMessage 
-              error={error} 
-              onDismiss={() => setError('')}
-              className="mb-4"
-            />
-          )}
+          <div className="mb-4">
+            {userStats.loading ? (
+              <div className="card shadow-sm border-0">
+                <div className="card-body text-center py-4">
+                  <LoadingSpinner size="sm" message="Loading statistics..." />
+                </div>
+              </div>
+            ) : userStats.errorMessage ? (
+              <div className="card shadow-sm border-0">
+                <div className="card-body text-center py-4">
+                  <ErrorMessage error={userStats.errorMessage} type="warning" showIcon={false} />
+                  <button className="btn btn-outline-primary btn-sm mt-2" onClick={fetchUserStats}>
+                    <i className="bi bi-arrow-clockwise me-1"></i>Retry
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <ProfileStats user={user} savedJobsCount={userStats.savedJobsCount} appliedJobsCount={userStats.appliedJobsCount} />
+            )}
+          </div>
 
-          {/* Profile Stats */}
-          <ProfileStats 
-            user={user}
-            savedJobsCount={savedJobsCount}
-            appliedJobsCount={appliedJobsCount}
-          />
-
-          {/* Main Profile Card */}
           <div className="card shadow-sm border-0">
             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
               <h3 className="mb-0">
-                {isEditing ? (
-                  <>
-                    <i className="bi bi-pencil-square me-2 text-primary"></i>
-                    Edit Profile
-                  </>
-                ) : (
-                  <>
-                    <i className="bi bi-person-circle me-2 text-primary"></i>
-                    My Profile
-                  </>
-                )}
+                <i className={`bi ${isEditing ? 'bi-pencil-square' : 'bi-person-circle'} me-2 text-primary`}></i>
+                {isEditing ? 'Edit Profile' : 'My Profile'}
               </h3>
-              
               <div className="d-flex gap-2">
                 {!isEditing && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleEditClick}
-                    disabled={loading || authLoading}
-                  >
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-pencil me-2"></i>
-                        Edit Profile
-                      </>
-                    )}
+                  <button type="button" className="btn btn-primary" onClick={handleEditClick} disabled={saving}>
+                    {saving ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...</> : <><i className="bi bi-pencil me-2"></i>Edit Profile</>}
                   </button>
                 )}
-
                 {isEditing && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={handleCancel}
-                    disabled={loading}
-                  >
-                    <i className="bi bi-x-circle me-1"></i>
-                    Cancel
+                  <button type="button" className="btn btn-outline-secondary" onClick={handleCancel} disabled={saving}>
+                    <i className="bi bi-x-circle me-1"></i>Cancel
                   </button>
                 )}
               </div>
             </div>
-            
             <div className="card-body p-4">
-              {isEditing ? (
-                <ProfileForm
-                  user={user}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                  loading={loading}
-                />
-              ) : (
-                <ProfileDisplay user={user} />
-              )}
+              {isEditing ? <ProfileForm user={user} onSave={handleSave} onCancel={handleCancel} loading={saving} /> : <ProfileDisplay user={user} />}
             </div>
           </div>
 
-          {/* Resume Section - Only show when not editing main profile */}
           {!isEditing && (
             <div className="card shadow-sm border-0 mt-4">
               <div className="card-header bg-white border-0">
-                <h5 className="mb-0">
-                  <i className="bi bi-file-earmark-text me-2 text-primary"></i>
-                  Resume Management
-                </h5>
+                <h5 className="mb-0"><i className="bi bi-file-earmark-text me-2 text-primary"></i>Resume Management</h5>
               </div>
               <div className="card-body p-4">
-                <ResumeSection 
-                  user={user}
-                  onResumeUpdate={handleResumeUpdate}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Profile Tips */}
-          {!isEditing && (
-            <div className="mt-4">
-              <div className="card bg-light border-0">
-                <div className="card-body p-4">
-                  <h5 className="fw-bold mb-3">
-                    <i className="bi bi-lightbulb text-warning me-2"></i>
-                    Profile Tips
-                  </h5>
-                  <div className="row">
-                    <div className="col-md-4 mb-3">
-                      <h6 className="fw-semibold">Complete Your Profile</h6>
-                      <p className="text-muted small mb-0">
-                        A complete profile gets more views from recruiters and increases your chances of being found.
-                      </p>
-                    </div>
-                    <div className="col-md-4 mb-3">
-                      <h6 className="fw-semibold">Upload Your Resume</h6>
-                      <p className="text-muted small mb-0">
-                        Keep your resume up to date and upload multiple versions for different types of positions.
-                      </p>
-                    </div>
-                    <div className="col-md-4 mb-3">
-                      <h6 className="fw-semibold">Professional Photo</h6>
-                      <p className="text-muted small mb-0">
-                        A professional profile picture makes your profile more trustworthy and engaging.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <ResumeSection user={user} onResumeUpdate={handleResumeUpdate} />
               </div>
             </div>
           )}
