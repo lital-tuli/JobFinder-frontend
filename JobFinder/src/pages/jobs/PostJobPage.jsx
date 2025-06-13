@@ -21,7 +21,12 @@ const PostJobPage = () => {
     description: '',
     requirements: '',
     contactEmail: '',
-    
+    // Note: Additional fields removed as they're not supported by backend
+    // companyWebsite: '',
+    // applicationDeadline: '',
+    // experienceLevel: '',
+    // benefits: '',
+    // tags: ''
   });
 
   // Enhanced validation
@@ -283,14 +288,14 @@ const PostJobPage = () => {
                       onChange={(value) => handleFieldChange('jobType', value)}
                       required
                       disabled={loading}
-                      options={[
-                        { value: 'Full-time', label: 'Full-time' },
-                        { value: 'Part-time', label: 'Part-time' },
-                        { value: 'Contract', label: 'Contract' },
-                        { value: 'Internship', label: 'Internship' },
-                        { value: 'Remote', label: 'Remote' }
-                      ]}
-                    />
+                      placeholder="Select job type"
+                    >
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Internship">Internship</option>
+                      <option value="Remote">Remote</option>
+                    </FormField>
                   </div>
 
                   <div className="col-md-6 mb-3">
