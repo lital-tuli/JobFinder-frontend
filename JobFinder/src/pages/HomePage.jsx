@@ -1,59 +1,46 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useJobInteractions } from '../hooks/useJobInteractions';
+// src/pages/HomePage.jsx - Complete Fixed Version
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import jobService from '../services/jobService';
-import HeroSection from '../components/sections/home/HeroSection';
-import FeaturedJobsSection from '../components/sections/home/FeaturedJobsSection';
-import JobCategoriesSection from '../components/sections/home/JobCategoriesSection';
-import HowItWorksSection from '../components/sections/home/HowItWorksSection';
-import TestimonialsSection from '../components/sections/home/TestimonialsSection';
-import CTASection from '../components/sections/home/CTASection';
-import EnhancedJobFilters from "../components/JobSearch/EnhancedJobFilters";
+import JobCard from '../components/jobs/JobCard/JobCard';
+import EnhancedJobFilters from '../components/jobs/EnhancedJobFilters/EnhancedJobFilters';
+import ErrorMessage from '../components/common/messages/ErrorMessage';
+
 const HomePage = () => {
-  // Basic state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [location, setLocation] = useState('');
-  const [loading, setLoading] = useState(false);
+  // State management
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [allJobs, setAllJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
+  const [featuredJobs, setFeaturedJobs] = useState([]);
   const [jobCategories, setJobCategories] = useState([]);
   const [siteStats, setSiteStats] = useState({
     totalJobs: 0,
     totalCompanies: 0,
-    totalUsers: '1,500+'
+    totalUsers: 1250, // Static for now
+    totalApplications: 2800 // Static for now
   });
 
-  // NEW: Enhanced filtering state
-  const [allJobs, setAllJobs] = useState([]);
-  const [filteredJobs, setFilteredJobs] = useState([]);
-  const [featuredJobs, setFeaturedJobs] = useState([]);
-
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-  
-  // Use the job interactions hook - must be called unconditionally
-  const jobInteractions = useJobInteractions();
-  const { isJobSaved, toggleSaveJob } = jobInteractions || {
-    isJobSaved: () => false,
-    toggleSaveJob: async () => {
-      console.warn('toggleSaveJob fallback called');
-    },
-  };
-
-  // Generate job categories from job data
+  // Generate job categories from jobs data
   const generateJobCategories = useCallback((jobs) => {
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+      setJobCategories([]);
+      return;
+    }
+
     const categoryMap = {};
+    
     jobs.forEach(job => {
       const title = job.title?.toLowerCase() || '';
-      if (title.includes('developer') || title.includes('engineer') || title.includes('programmer')) {
+      
+      // Categorize based on job title keywords
+      if (title.includes('develop') || title.includes('engineer') || title.includes('programmer')) {
         categoryMap['Development'] = (categoryMap['Development'] || 0) + 1;
       } else if (title.includes('design') || title.includes('ui') || title.includes('ux')) {
         categoryMap['Design'] = (categoryMap['Design'] || 0) + 1;
-      } else if (title.includes('marketing')) {
+      } else if (title.includes('market') || title.includes('sales') || title.includes('business')) {
         categoryMap['Marketing'] = (categoryMap['Marketing'] || 0) + 1;
-      } else if (title.includes('sales')) {
-        categoryMap['Sales'] = (categoryMap['Sales'] || 0) + 1;
-      } else if (title.includes('manager') || title.includes('management')) {
+      } else if (title.includes('manage') || title.includes('lead') || title.includes('director')) {
         categoryMap['Management'] = (categoryMap['Management'] || 0) + 1;
       } else if (title.includes('support') || title.includes('customer')) {
         categoryMap['Customer Service'] = (categoryMap['Customer Service'] || 0) + 1;
@@ -64,7 +51,6 @@ const HomePage = () => {
       { name: 'Development', icon: 'bi-code-slash', count: categoryMap['Development'] || 0, color: 'primary' },
       { name: 'Design', icon: 'bi-palette', count: categoryMap['Design'] || 0, color: 'info' },
       { name: 'Marketing', icon: 'bi-megaphone', count: categoryMap['Marketing'] || 0, color: 'success' },
-      { name: 'Sales', icon: 'bi-graph-up-arrow', count: categoryMap['Sales'] || 0, color: 'warning' },
       { name: 'Management', icon: 'bi-people', count: categoryMap['Management'] || 0, color: 'danger' },
       { name: 'Customer Service', icon: 'bi-headset', count: categoryMap['Customer Service'] || 0, color: 'secondary' }
     ];
@@ -72,24 +58,33 @@ const HomePage = () => {
     setJobCategories(categoriesWithIcons.filter(cat => cat.count > 0));
   }, []);
 
-  // NEW: Handle filtered jobs from EnhancedJobFilters
+  // Handle filtered jobs from EnhancedJobFilters
   const handleFilteredJobs = useCallback((filtered) => {
+    console.log('Handling filtered jobs:', filtered);
     setFilteredJobs(filtered);
     // Update featured jobs to show filtered results (latest 6)
     setFeaturedJobs(filtered.slice(0, 6));
   }, []);
 
-  // Fetch homepage data
+  // ✅ FIXED: Fetch homepage data with proper error handling
   useEffect(() => {
     const fetchHomePageData = async () => {
       setLoading(true);
       setError('');
       
       try {
+        console.log('Fetching homepage data...');
+        
+        // ✅ FIX: Use the fixed getAllJobs function
         const data = await jobService.getAllJobs();
+        console.log('Homepage data received:', data);
+        
+        // ✅ FIX: Ensure we have an array to work with
         const jobsArray = Array.isArray(data) ? data : [];
         
-        // NEW: Set both all jobs and filtered jobs
+        console.log('Processing jobs array:', jobsArray.length, 'jobs');
+        
+        // Set both all jobs and filtered jobs
         setAllJobs(jobsArray);
         setFilteredJobs(jobsArray);
         
@@ -106,12 +101,25 @@ const HomePage = () => {
           totalCompanies: [...new Set(jobsArray.map(job => job.company))].length
         }));
         
+        console.log('Homepage data loaded successfully');
+        
       } catch (err) {
         console.error('Failed to fetch homepage data:', err);
-        setError('Failed to load job data. Please try again later.');
-        setFeaturedJobs([]);
+        
+        // ✅ FIX: Better error handling
+        if (err.error) {
+          setError(err.error);
+        } else if (err.message) {
+          setError(err.message);
+        } else {
+          setError('Failed to load job data. Please try again later.');
+        }
+        
+        // Set empty arrays on error to prevent crashes
         setAllJobs([]);
         setFilteredJobs([]);
+        setFeaturedJobs([]);
+        setJobCategories([]);
       } finally {
         setLoading(false);
       }
@@ -120,211 +128,222 @@ const HomePage = () => {
     fetchHomePageData();
   }, [generateJobCategories]);
 
-  // Handle job save
-  const handleSaveJob = useCallback(async (jobId) => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/' } });
-      return;
-    }
+  // Retry function for error state
+  const handleRetry = () => {
+    window.location.reload();
+  };
 
-    try {
-      await toggleSaveJob(jobId);
-    } catch (err) {
-      console.error('Failed to save job:', err);
-      setError(err.message || 'Failed to save job');
-      setTimeout(() => setError(''), 5000);
-    }
-  }, [isAuthenticated, toggleSaveJob, navigate]);
-
-  // Handle search from hero section (if you want to integrate with filters)
-  const handleHeroSearch = useCallback((searchTerm, location) => {
-    // Update the enhanced filters with hero search
-    if (searchTerm || location) {
-      const searchFiltered = allJobs.filter(job => {
-        const matchesSearch = !searchTerm || 
-          job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesLocation = !location || 
-          job.location?.toLowerCase().includes(location.toLowerCase());
-        
-        return matchesSearch && matchesLocation;
-      });
-      
-      handleFilteredJobs(searchFiltered);
-    }
-  }, [allJobs, handleFilteredJobs]);
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container py-5">
+        <div className="row justify-content-center">
+          <div className="col-12 text-center">
+            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-3 text-muted">Loading job listings...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="home-page">
+    <div className="homepage">
       {/* Hero Section */}
-      <HeroSection
-        siteStats={siteStats}
-        isAuthenticated={isAuthenticated}
-        user={user}
-        searchTerm={searchTerm}
-        location={location}
-        onSearchChange={setSearchTerm}
-        onLocationChange={setLocation}
-        onSearch={handleHeroSearch} // NEW: Pass search handler
-      />
-
-      {/* NEW: Enhanced Job Filters Section */}
-      {allJobs.length > 0 && (
-        <section className="py-5" style={{ backgroundColor: '#f8f9fa' }}>
-          <div className="container">
-            {/* Section Header */}
-            <div className="row mb-4">
-              <div className="col-12 text-center">
-                <h2 className="fw-bold mb-2">Find Your Perfect Job</h2>
-                <p className="text-muted">
-                  Use our advanced filters to discover opportunities that match your preferences
-                </p>
+      <section className="hero-section bg-primary text-white py-5">
+        <div className="container">
+          <div className="row align-items-center">
+            <div className="col-lg-6">
+              <h1 className="display-4 fw-bold mb-3">
+                Find Your Dream Job Today
+              </h1>
+              <p className="lead mb-4">
+                Connect with top employers and discover opportunities that match your skills and ambitions.
+              </p>
+              <div className="d-flex gap-3">
+                <Link to="/jobs" className="btn btn-light btn-lg">
+                  <i className="bi bi-search me-2"></i>
+                  Browse Jobs
+                </Link>
+                <Link to="/register" className="btn btn-outline-light btn-lg">
+                  <i className="bi bi-person-plus me-2"></i>
+                  Sign Up
+                </Link>
               </div>
             </div>
+            <div className="col-lg-6 text-center">
+              <img 
+                src="/api/placeholder/500/400" 
+                alt="Job search illustration" 
+                className="img-fluid rounded shadow"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Enhanced Filters */}
-            <EnhancedJobFilters 
-              jobs={allJobs}
-              onFilteredJobs={handleFilteredJobs}
-              className="mb-4"
-            />
-            
-            {/* Results Summary */}
-            {filteredJobs.length !== allJobs.length && (
-              <div className="row">
-                <div className="col-12">
-                  <div className="alert alert-info d-flex align-items-center">
-                    <i className="bi bi-funnel me-2"></i>
-                    <span>
-                      Showing <strong>{filteredJobs.length}</strong> of <strong>{allJobs.length}</strong> jobs based on your filters.
-                    </span>
-                    <button 
-                      className="btn btn-link p-0 ms-auto text-decoration-none"
-                      onClick={() => handleFilteredJobs(allJobs)}
-                    >
-                      <i className="bi bi-x-circle me-1"></i>
-                      Show all jobs
-                    </button>
-                  </div>
-                </div>
+      {/* Stats Section */}
+      <section className="stats-section py-4 bg-light">
+        <div className="container">
+          <div className="row text-center">
+            <div className="col-md-3 col-6 mb-3">
+              <div className="stat-item">
+                <h3 className="text-primary fw-bold">{siteStats.totalJobs.toLocaleString()}</h3>
+                <p className="text-muted mb-0">Active Jobs</p>
               </div>
-            )}
+            </div>
+            <div className="col-md-3 col-6 mb-3">
+              <div className="stat-item">
+                <h3 className="text-success fw-bold">{siteStats.totalCompanies.toLocaleString()}</h3>
+                <p className="text-muted mb-0">Companies</p>
+              </div>
+            </div>
+            <div className="col-md-3 col-6 mb-3">
+              <div className="stat-item">
+                <h3 className="text-info fw-bold">{siteStats.totalUsers.toLocaleString()}</h3>
+                <p className="text-muted mb-0">Job Seekers</p>
+              </div>
+            </div>
+            <div className="col-md-3 col-6 mb-3">
+              <div className="stat-item">
+                <h3 className="text-warning fw-bold">{siteStats.totalApplications.toLocaleString()}</h3>
+                <p className="text-muted mb-0">Applications</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Quick Stats */}
-            <div className="row g-3 mt-2">
-              <div className="col-md-3 col-6">
-                <div className="text-center">
-                  <h4 className="fw-bold text-primary mb-0">{filteredJobs.length}</h4>
-                  <small className="text-muted">Available Jobs</small>
-                </div>
+      {/* Job Categories Section */}
+      {jobCategories.length > 0 && (
+        <section className="categories-section py-5">
+          <div className="container">
+            <div className="row mb-4">
+              <div className="col-12 text-center">
+                <h2 className="fw-bold">Browse by Category</h2>
+                <p className="text-muted">Explore opportunities in different fields</p>
               </div>
-              <div className="col-md-3 col-6">
-                <div className="text-center">
-                  <h4 className="fw-bold text-success mb-0">
-                    {[...new Set(filteredJobs.map(job => job.company))].length}
-                  </h4>
-                  <small className="text-muted">Companies Hiring</small>
+            </div>
+            <div className="row">
+              {jobCategories.map((category) => (
+                <div key={category.name} className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                  <Link 
+                    to={`/jobs?category=${encodeURIComponent(category.name)}`}
+                    className="text-decoration-none"
+                  >
+                    <div className={`card border-0 shadow-sm h-100 hover-card text-center bg-${category.color} bg-opacity-10`}>
+                      <div className="card-body py-4">
+                        <i className={`bi ${category.icon} fs-1 text-${category.color} mb-3`}></i>
+                        <h5 className="card-title">{category.name}</h5>
+                        <p className="card-text text-muted">
+                          {category.count} {category.count === 1 ? 'job' : 'jobs'}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
                 </div>
-              </div>
-              <div className="col-md-3 col-6">
-                <div className="text-center">
-                  <h4 className="fw-bold text-info mb-0">
-                    {[...new Set(filteredJobs.map(job => job.jobType))].length}
-                  </h4>
-                  <small className="text-muted">Job Types</small>
-                </div>
-              </div>
-              <div className="col-md-3 col-6">
-                <div className="text-center">
-                  <h4 className="fw-bold text-warning mb-0">
-                    {[...new Set(filteredJobs.map(job => job.location))].length}
-                  </h4>
-                  <small className="text-muted">Locations</small>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* Error Display */}
-      {error && (
+      {/* Job Search & Filter Section */}
+      <section className="search-section py-5 bg-light">
         <div className="container">
-          <div className="alert alert-danger alert-dismissible fade show" role="alert">
-            <i className="bi bi-exclamation-triangle me-2"></i>
-            {error}
-            <button 
-              type="button" 
-              className="btn-close" 
-              onClick={() => setError('')}
-              aria-label="Close"
-            ></button>
+          <div className="row mb-4">
+            <div className="col-12 text-center">
+              <h2 className="fw-bold">Latest Job Opportunities</h2>
+              <p className="text-muted">Filter and find the perfect position for you</p>
+            </div>
           </div>
+
+          {/* Enhanced Job Filters */}
+          <div className="row mb-4">
+            <div className="col-12">
+              <EnhancedJobFilters 
+                jobs={allJobs}
+                onFilteredJobs={handleFilteredJobs}
+              />
+            </div>
+          </div>
+
+          {/* Error Handling */}
+          {error && (
+            <div className="row mb-4">
+              <div className="col-12">
+                <ErrorMessage message={error} />
+                <div className="text-center mt-3">
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleRetry}
+                  >
+                    <i className="bi bi-arrow-clockwise me-2"></i>
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Featured Jobs Display */}
+          <div className="row">
+            {featuredJobs.length > 0 ? (
+              featuredJobs.map((job, index) => (
+                <div key={job._id || index} className="col-lg-4 col-md-6 mb-4">
+                  <JobCard job={job} />
+                </div>
+              ))
+            ) : !loading && !error ? (
+              <div className="col-12 text-center py-5">
+                <i className="bi bi-briefcase fs-1 text-muted mb-3"></i>
+                <h4 className="text-muted">No jobs found</h4>
+                <p className="text-muted">Try adjusting your search filters or check back later for new opportunities.</p>
+                <Link to="/jobs" className="btn btn-primary">
+                  View All Jobs
+                </Link>
+              </div>
+            ) : null}
+          </div>
+
+          {/* View All Jobs Link */}
+          {featuredJobs.length > 0 && (
+            <div className="row">
+              <div className="col-12 text-center">
+                <Link to="/jobs" className="btn btn-outline-primary btn-lg">
+                  <i className="bi bi-arrow-right me-2"></i>
+                  View All Jobs ({filteredJobs.length})
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Featured Jobs Section - Now shows filtered results */}
-      <FeaturedJobsSection
-        featuredJobs={featuredJobs}
-        loading={loading}
-        isAuthenticated={isAuthenticated}
-        isJobSaved={isJobSaved}
-        onSaveJob={handleSaveJob}
-      />
-
-      {/* Job Categories Section */}
-      {jobCategories.length > 0 && (
-        <JobCategoriesSection categories={jobCategories} />
-      )}
-
-      {/* How It Works Section */}
-      <HowItWorksSection />
-
-      {/* Testimonials Section */}
-      <TestimonialsSection />
+      </section>
 
       {/* Call to Action Section */}
-      <CTASection isAuthenticated={isAuthenticated} />
-
-      {/* Inline Styles for Enhanced Animations */}
-      <style jsx>{`
-        .home-page {
-          overflow-x: hidden;
-        }
-        
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .enhanced-job-filters {
-          animation: fadeInUp 0.6s ease-out;
-        }
-        
-        .alert {
-          animation: fadeInUp 0.4s ease-out;
-        }
-        
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-          .alert {
-            font-size: 0.9rem;
-            padding: 0.75rem;
-          }
-          
-          .alert .btn-link {
-            font-size: 0.8rem;
-          }
-        }
-      `}</style>
+      <section className="cta-section py-5 bg-primary text-white">
+        <div className="container">
+          <div className="row align-items-center">
+            <div className="col-lg-8">
+              <h2 className="fw-bold mb-3">Ready to Start Your Career Journey?</h2>
+              <p className="lead mb-0">
+                Join thousands of professionals who have found their dream jobs through our platform.
+              </p>
+            </div>
+            <div className="col-lg-4 text-center">
+              <Link to="/register" className="btn btn-light btn-lg me-3">
+                <i className="bi bi-person-plus me-2"></i>
+                Get Started
+              </Link>
+              <Link to="/about" className="btn btn-outline-light btn-lg">
+                Learn More
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

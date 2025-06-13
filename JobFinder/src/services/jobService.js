@@ -9,10 +9,35 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 10000 // 10 second timeout
+  timeout: 10000, // 10 second timeout
+  validateStatus: function (status) {
+    // Accept status codes from 200-399 (including 304)
+    return status >= 200 && status < 400;
+  }
 });
 
-// Enhanced error handler with detailed error information
+api.interceptors.response.use(
+  (response) => {
+    // Handle 304 responses as success
+    if (response.status === 304) {
+      console.log('304 Not Modified - content unchanged');
+      response.data = response.data || [];
+    }
+    return response;
+  },
+  (error) => {
+    // Don't treat 304 as error
+    if (error.response && error.response.status === 304) {
+      console.log('304 intercepted in error handler - returning success');
+      return Promise.resolve({
+        ...error.response,
+        data: error.response.data || []
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 const handleApiError = (error) => {
   let errorMessage = 'An unexpected error occurred';
   
@@ -20,6 +45,11 @@ const handleApiError = (error) => {
     if (error.response) {
       // Server responded with error status
       const { status, data } = error.response;
+      
+      if (status === 304) {
+        console.log('Content not modified (304), using cached data');
+        return data || [];
+      }
       
       if (status === 401) {
         errorMessage = 'Unauthorized. Please log in to continue.';
@@ -71,7 +101,7 @@ const getAuthHeaders = () => {
   return token ? { "x-auth-token": token } : {};
 };
 
-// Get all jobs with optional filters and enhanced error handling
+// ✅ FIXED: Get all jobs with proper 304 handling
 export const getAllJobs = async (filters = {}, retryCount = 0) => {
   try {
     // Validate filters
@@ -89,13 +119,31 @@ export const getAllJobs = async (filters = {}, retryCount = 0) => {
       validFilters.search = filters.search;
     }
 
+    console.log('Fetching jobs with filters:', validFilters);
+    
     const response = await api.get(JOBS_URL, { 
       params: validFilters,
       headers: getAuthHeaders()
     });
     
+    console.log('Jobs API response status:', response.status);
+    
+    // The interceptor already handles 304, but double-check
+    if (response.status === 304) {
+      console.log('Jobs data not modified since last request (304)');
+      return response.data || [];
+    }
+    
     return response.data;
   } catch (error) {
+    console.error('getAllJobs error:', error);
+    
+    // ✅ FIX: Check if it's actually a 304 response before treating as error
+    if (error.response && error.response.status === 304) {
+      console.log('Handling 304 response in catch block');
+      return error.response.data || [];
+    }
+    
     // Retry once on timeout
     if (retryCount === 0 && error.code === 'ECONNABORTED') {
       console.warn('Request timeout, retrying...');
@@ -123,10 +171,13 @@ export const getJobById = async (jobId) => {
     
     return response.data;
   } catch (error) {
+    // ✅ FIX: Handle 304 for individual jobs too
+    if (error.response && error.response.status === 304) {
+      return error.response.data || {};
+    }
     return handleApiError(error);
   }
 };
-
 
 // Create a new job posting with validation
 export const createJob = async (jobData) => {
@@ -161,12 +212,15 @@ export const createJob = async (jobData) => {
       throw { response: { status: 401 }, message: "Please log in to post a job" };
     }
 
+    console.log('Creating job with data:', jobData);
+
     const response = await api.post(JOBS_URL, jobData, {
       headers: getAuthHeaders()
     });
     
     return response.data;
   } catch (error) {
+    console.error('createJob error:', error);
     return handleApiError(error);
   }
 };
@@ -203,12 +257,6 @@ export const updateJob = async (jobId, jobData) => {
       }
     }
 
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    
-    if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to update the job" };
-    }
-
     const response = await api.put(`${JOBS_URL}/${jobId}`, jobData, {
       headers: getAuthHeaders()
     });
@@ -219,7 +267,7 @@ export const updateJob = async (jobId, jobData) => {
   }
 };
 
-// Apply for a job with validation
+// Apply for a job
 export const applyForJob = async (jobId) => {
   try {
     if (!jobId) {
@@ -247,7 +295,7 @@ export const applyForJob = async (jobId) => {
   }
 };
 
-// Save a job for later with validation
+// Save/bookmark a job
 export const saveJob = async (jobId) => {
   try {
     if (!jobId) {
@@ -275,7 +323,7 @@ export const saveJob = async (jobId) => {
   }
 };
 
-// Delete a job with validation
+// Delete a job
 export const deleteJob = async (jobId) => {
   try {
     if (!jobId) {
@@ -293,7 +341,6 @@ export const deleteJob = async (jobId) => {
       throw { response: { status: 401 }, message: "Please log in to delete jobs" };
     }
 
-    // Confirm deletion (this should typically be done in the UI)
     const response = await api.delete(`${JOBS_URL}/${jobId}`, {
       headers: getAuthHeaders()
     });
@@ -304,104 +351,53 @@ export const deleteJob = async (jobId) => {
   }
 };
 
-// Enhanced search/filter helper function
-export const filterJobs = (jobs, query) => {
+// Filter jobs (client-side filtering)
+export const filterJobs = (jobs, filters) => {
   if (!Array.isArray(jobs)) {
-    console.warn('filterJobs: jobs parameter must be an array');
+    console.warn('filterJobs: jobs parameter is not an array');
     return [];
   }
 
-  if (!query || typeof query !== 'string' || query.trim() === '') {
-    return jobs;
-  }
-  
-  const searchTerm = query.toLowerCase().trim();
-  
-  return jobs.filter((job) => {
-    if (!job || typeof job !== 'object') {
-      return false;
+  return jobs.filter(job => {
+    if (filters.jobType && job.jobType !== filters.jobType) return false;
+    if (filters.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
+    if (filters.company && !job.company.toLowerCase().includes(filters.company.toLowerCase())) return false;
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      return (
+        job.title.toLowerCase().includes(searchTerm) ||
+        job.company.toLowerCase().includes(searchTerm) ||
+        job.description.toLowerCase().includes(searchTerm) ||
+        job.requirements.toLowerCase().includes(searchTerm)
+      );
     }
-
-    const searchFields = [
-      job.title,
-      job.company,
-      job.location,
-      job.jobType,
-      job.description,
-      job.requirements,
-      job.salary
-    ];
-
-    const searchString = searchFields
-      .filter(field => field && typeof field === 'string')
-      .join(' ')
-      .toLowerCase();
-
-    return searchString.includes(searchTerm);
+    return true;
   });
 };
 
-// Enhanced pagination helper with validation
-export const paginateJobs = (jobs, page, jobsPerPage) => {
+// Paginate jobs (client-side pagination)
+export const paginateJobs = (jobs, page = 1, limit = 10) => {
   if (!Array.isArray(jobs)) {
-    console.warn('paginateJobs: jobs parameter must be an array');
-    return {
-      currentPage: 1,
-      totalPages: 0,
-      totalJobs: 0,
-      results: []
-    };
+    console.warn('paginateJobs: jobs parameter is not an array');
+    return { jobs: [], totalPages: 0, currentPage: 1, totalJobs: 0 };
   }
 
-  const currentPage = Math.max(1, parseInt(page) || 1);
-  const perPage = Math.max(1, Math.min(100, parseInt(jobsPerPage) || 10)); // Max 100 per page
-  
-  const startIndex = (currentPage - 1) * perPage;
-  const endIndex = startIndex + perPage;
-  const totalPages = Math.ceil(jobs.length / perPage);
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const paginatedJobs = jobs.slice(startIndex, endIndex);
   
   return {
-    currentPage: Math.min(currentPage, totalPages || 1),
-    totalPages,
-    totalJobs: jobs.length,
-    results: jobs.slice(startIndex, endIndex),
-    hasNext: currentPage < totalPages,
-    hasPrev: currentPage > 1
+    jobs: paginatedJobs,
+    totalPages: Math.ceil(jobs.length / limit),
+    currentPage: page,
+    totalJobs: jobs.length
   };
 };
 
-// Search jobs with advanced filtering
-export const searchJobs = async (searchParams) => {
+// Search jobs (wrapper for getAllJobs with search)
+export const searchJobs = async (query) => {
   try {
-    const {
-      query = '',
-      location = '',
-      jobType = '',
-      company = '',
-      salaryMin = '',
-      salaryMax = '',
-      sortBy = 'date',
-      page = 1,
-      limit = 10
-    } = searchParams || {};
-
-    const params = new URLSearchParams();
-    
-    if (query) params.append('q', query);
-    if (location) params.append('location', location);
-    if (jobType) params.append('jobType', jobType);
-    if (company) params.append('company', company);
-    if (salaryMin) params.append('salaryMin', salaryMin);
-    if (salaryMax) params.append('salaryMax', salaryMax);
-    if (sortBy) params.append('sort', sortBy);
-    if (page) params.append('page', page);
-    if (limit) params.append('limit', limit);
-
-    const response = await api.get(`${JOBS_URL}/search?${params}`, {
-      headers: getAuthHeaders()
-    });
-    
-    return response.data;
+    return await getAllJobs({ search: query });
   } catch (error) {
     return handleApiError(error);
   }
@@ -419,18 +415,12 @@ export const getJobStatistics = async () => {
     return handleApiError(error);
   }
 };
- // Add these functions to your src/services/jobService.js file
 
 // Get job applicants (for recruiters)
 export const getJobApplicants = async (jobId) => {
   try {
     if (!jobId) {
       throw new Error('Job ID is required');
-    }
-
-    // Validate jobId format (basic ObjectId validation)
-    if (typeof jobId !== 'string' || jobId.length !== 24) {
-      throw new Error('Invalid job ID format');
     }
 
     const response = await api.get(`${JOBS_URL}/${jobId}/applicants`, {
@@ -444,29 +434,22 @@ export const getJobApplicants = async (jobId) => {
 };
 
 // Download applicant resume
-export const downloadApplicantResume = async (jobId, applicantId) => {
+export const downloadApplicantResume = async (userId, applicantName) => {
   try {
-    if (!jobId || !applicantId) {
-      throw new Error('Job ID and Applicant ID are required');
-    }
-
-    // Validate IDs format
-    if (typeof jobId !== 'string' || jobId.length !== 24 ||
-        typeof applicantId !== 'string' || applicantId.length !== 24) {
-      throw new Error('Invalid ID format');
-    }
-
-    const response = await api.get(`${JOBS_URL}/${jobId}/applicants/${applicantId}/resume`, {
+    const response = await api.get(`/users/${userId}/resume/download`, {
       headers: getAuthHeaders(),
       responseType: 'blob'
     });
     
-    // Extract filename from response headers
+    // Extract filename from response headers or use default
+    let filename = `${applicantName.replace(/\s+/g, '_')}_resume.pdf`;
+    
     const contentDisposition = response.headers['content-disposition'];
-    let filename = 'resume.pdf';
     if (contentDisposition) {
-      const matches = contentDisposition.match(/filename="(.+)"/);
-      if (matches) filename = matches[1];
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+      if (matches && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
     }
     
     // Create download
@@ -500,6 +483,10 @@ export const getMyJobListings = async () => {
     
     return response.data;
   } catch (error) {
+    // ✅ FIX: Handle 304 for my listings too
+    if (error.response && error.response.status === 304) {
+      return error.response.data || [];
+    }
     return handleApiError(error);
   }
 };

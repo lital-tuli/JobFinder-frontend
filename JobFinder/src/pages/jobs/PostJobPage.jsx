@@ -12,7 +12,6 @@ const PostJobPage = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const navigate = useNavigate();
 
-  // ✅ FIXED: Form data structure matches backend validation exactly
   const [formData, setFormData] = useState({
     title: '',           // Required: min 2, max 256
     company: '',         // Required: min 2, max 256  
@@ -23,9 +22,9 @@ const PostJobPage = () => {
     requirements: '',    // Required: min 2, max 1024
     contactEmail: '',    // Required: valid email
     // Note: postedBy, applicants, isActive are handled by backend
+    // Removed: tags field (was causing 400 error)
   });
 
-  // ✅ FIXED: Validation exactly matching backend Joi schema
   const validateForm = () => {
     const errors = {};
 
@@ -159,15 +158,12 @@ const PostJobPage = () => {
       // Enhanced error handling
       if (err.response?.data?.message) {
         setError(err.response.data.message);
+      } else if (err.error) {
+        setError(err.error);
       } else if (err.message) {
         setError(err.message);
       } else {
         setError('Failed to post job. Please try again.');
-      }
-
-      // Handle field-specific errors if available
-      if (err.response?.data?.errors) {
-        setFieldErrors(err.response.data.errors);
       }
     } finally {
       setLoading(false);
@@ -196,178 +192,249 @@ const PostJobPage = () => {
         <div className="col-lg-8">
           <div className="card shadow-sm border-0">
             <div className="card-header bg-primary text-white py-3">
-              <h2 className="mb-0">Post a New Job</h2>
-            </div>
-            <div className="card-body p-4">
-              {error && (
-                <ErrorMessage 
-                  error={error} 
-                  onDismiss={() => setError('')} 
-                  className="mb-4" 
-                />
-              )}
-              {success && (
-                <SuccessMessage 
-                  message={success} 
-                  onDismiss={() => setSuccess('')} 
-                  className="mb-4" 
-                />
-              )}
-              
-              <form onSubmit={handleSubmit}>
-                <div className="row">
-                  <div className="col-md-6">
-                    <FormField
-                      label="Job Title"
-                      name="title"
-                      type="text"
-                      value={formData.title}
-                      error={fieldErrors.title}
-                      onChange={(value) => handleFieldChange('title', value)}
-                      placeholder="e.g. Senior React Developer"
-                      required
-                      maxLength={256}
-                      helpText={`${formData.title.length}/256 characters`}
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <FormField
-                      label="Company"
-                      name="company"
-                      type="text"
-                      value={formData.company}
-                      error={fieldErrors.company}
-                      onChange={(value) => handleFieldChange('company', value)}
-                      placeholder="e.g. TechCorp Inc."
-                      required
-                      maxLength={256}
-                      helpText={`${formData.company.length}/256 characters`}
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="col-md-6">
-                    <FormField
-                      label="Location"
-                      name="location"
-                      type="text"
-                      value={formData.location}
-                      error={fieldErrors.location}
-                      onChange={(value) => handleFieldChange('location', value)}
-                      placeholder="e.g. Tel Aviv, Israel"
-                      required
-                      maxLength={256}
-                      helpText={`${formData.location.length}/256 characters`}
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold">
-                        Job Type <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className={`form-select ${fieldErrors.jobType ? 'is-invalid' : ''}`}
-                        value={formData.jobType}
-                        onChange={(e) => handleFieldChange('jobType', e.target.value)}
-                        required
-                      >
-                        <option value="Full-time">Full-time</option>
-                        <option value="Part-time">Part-time</option>
-                        <option value="Contract">Contract</option>
-                        <option value="Internship">Internship</option>
-                        <option value="Remote">Remote</option>
-                      </select>
-                      {fieldErrors.jobType && (
-                        <div className="invalid-feedback">{fieldErrors.jobType}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="col-md-6">
-                    <FormField
-                      label="Salary (Optional)"
-                      name="salary"
-                      type="text"
-                      value={formData.salary}
-                      error={fieldErrors.salary}
-                      onChange={(value) => handleFieldChange('salary', value)}
-                      placeholder="e.g. $50,000 - $70,000"
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <FormField
-                      label="Contact Email"
-                      name="contactEmail"
-                      type="email"
-                      value={formData.contactEmail}
-                      error={fieldErrors.contactEmail}
-                      onChange={(value) => handleFieldChange('contactEmail', value)}
-                      placeholder="hiring@company.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <FormField
-                  label="Job Description"
-                  name="description"
-                  type="textarea"
-                  value={formData.description}
-                  error={fieldErrors.description}
-                  onChange={(value) => handleFieldChange('description', value)}
-                  placeholder="Describe the role, responsibilities, and what a typical day looks like..."
-                  required
-                  rows={6}
-                  maxLength={1024}
-                  helpText={`${formData.description.length}/1024 characters`}
-                />
-
-                <FormField
-                  label="Requirements"
-                  name="requirements"
-                  type="textarea"
-                  value={formData.requirements}
-                  error={fieldErrors.requirements}
-                  onChange={(value) => handleFieldChange('requirements', value)}
-                  placeholder="List the skills, experience, and qualifications required..."
-                  required
-                  rows={6}
-                  maxLength={1024}
-                  helpText={`${formData.requirements.length}/1024 characters`}
-                />
-
-                <div className="d-flex justify-content-end gap-3 mt-4">
+              <div className="d-flex justify-content-between align-items-center">
+                <h2 className="mb-0">
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Post a New Job
+                </h2>
+                <div className="d-flex gap-2">
                   <button 
                     type="button" 
-                    className="btn btn-secondary" 
+                    className="btn btn-outline-light btn-sm"
                     onClick={clearForm}
                     disabled={loading}
                   >
-                    <i className="bi bi-arrow-clockwise me-2"></i>
+                    <i className="bi bi-arrow-clockwise me-1"></i>
                     Clear Form
                   </button>
                   <button 
-                    type="submit" 
-                    className="btn btn-primary"
+                    type="button" 
+                    className="btn btn-outline-light btn-sm"
+                    onClick={() => navigate('/my-listings')}
                     disabled={loading}
                   >
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Posting Job...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-plus-circle me-2"></i>
-                        Post Job
-                      </>
-                    )}
+                    <i className="bi bi-list me-1"></i>
+                    My Listings
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <div className="card-body p-4">
+              {error && <ErrorMessage message={error} />}
+              {success && <SuccessMessage message={success} />}
+
+              <form onSubmit={handleSubmit} noValidate>
+                <div className="row">
+                  {/* Job Title */}
+                  <div className="col-md-8 mb-3">
+                    <FormField
+                      id="title"
+                      label="Job Title"
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => handleFieldChange('title', e.target.value)}
+                      error={fieldErrors.title}
+                      required
+                      placeholder="e.g., Senior Frontend Developer"
+                      maxLength={256}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* Job Type */}
+                  <div className="col-md-4 mb-3">
+                    <label htmlFor="jobType" className="form-label">
+                      Job Type <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      id="jobType"
+                      name="jobType"
+                      className={`form-select ${fieldErrors.jobType ? 'is-invalid' : ''}`}
+                      value={formData.jobType}
+                      onChange={(e) => handleFieldChange('jobType', e.target.value)}
+                      required
+                      disabled={loading}
+                    >
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Internship">Internship</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                    {fieldErrors.jobType && (
+                      <div className="invalid-feedback">{fieldErrors.jobType}</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="row">
+                  {/* Company */}
+                  <div className="col-md-6 mb-3">
+                    <FormField
+                      id="company"
+                      label="Company Name"
+                      type="text"
+                      value={formData.company}
+                      onChange={(e) => handleFieldChange('company', e.target.value)}
+                      error={fieldErrors.company}
+                      required
+                      placeholder="e.g., Tech Solutions Inc."
+                      maxLength={256}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div className="col-md-6 mb-3">
+                    <FormField
+                      id="location"
+                      label="Location"
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => handleFieldChange('location', e.target.value)}
+                      error={fieldErrors.location}
+                      required
+                      placeholder="e.g., Tel Aviv, Israel"
+                      maxLength={256}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
+                  {/* Salary */}
+                  <div className="col-md-6 mb-3">
+                    <FormField
+                      id="salary"
+                      label="Salary (Optional)"
+                      type="text"
+                      value={formData.salary}
+                      onChange={(e) => handleFieldChange('salary', e.target.value)}
+                      error={fieldErrors.salary}
+                      placeholder="e.g., $80,000 - $100,000"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* Contact Email */}
+                  <div className="col-md-6 mb-3">
+                    <FormField
+                      id="contactEmail"
+                      label="Contact Email"
+                      type="email"
+                      value={formData.contactEmail}
+                      onChange={(e) => handleFieldChange('contactEmail', e.target.value)}
+                      error={fieldErrors.contactEmail}
+                      required
+                      placeholder="jobs@company.com"
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                {/* Job Description */}
+                <div className="mb-3">
+                  <label htmlFor="description" className="form-label">
+                    Job Description <span className="text-danger">*</span>
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    className={`form-control ${fieldErrors.description ? 'is-invalid' : ''}`}
+                    rows="4"
+                    value={formData.description}
+                    onChange={(e) => handleFieldChange('description', e.target.value)}
+                    placeholder="Describe the role, responsibilities, and what the candidate will be doing..."
+                    required
+                    maxLength={1024}
+                    disabled={loading}
+                  />
+                  <div className="form-text">
+                    {formData.description.length}/1024 characters
+                  </div>
+                  {fieldErrors.description && (
+                    <div className="invalid-feedback">{fieldErrors.description}</div>
+                  )}
+                </div>
+
+                {/* Requirements */}
+                <div className="mb-4">
+                  <label htmlFor="requirements" className="form-label">
+                    Requirements <span className="text-danger">*</span>
+                  </label>
+                  <textarea
+                    id="requirements"
+                    name="requirements"
+                    className={`form-control ${fieldErrors.requirements ? 'is-invalid' : ''}`}
+                    rows="4"
+                    value={formData.requirements}
+                    onChange={(e) => handleFieldChange('requirements', e.target.value)}
+                    placeholder="List the skills, experience, and qualifications required for this position..."
+                    required
+                    maxLength={1024}
+                    disabled={loading}
+                  />
+                  <div className="form-text">
+                    {formData.requirements.length}/1024 characters
+                  </div>
+                  {fieldErrors.requirements && (
+                    <div className="invalid-feedback">{fieldErrors.requirements}</div>
+                  )}
+                </div>
+
+                {/* Submit Buttons */}
+                <div className="d-flex justify-content-between align-items-center">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => navigate('/my-listings')}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-arrow-left me-1"></i>
+                    Cancel
+                  </button>
+                  
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary"
+                      onClick={clearForm}
+                      disabled={loading}
+                    >
+                      <i className="bi bi-arrow-clockwise me-1"></i>
+                      Clear
+                    </button>
+                    
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Posting Job...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-plus-circle me-1"></i>
+                          Post Job
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </form>
+            </div>
+
+            {/* Help Section */}
+            <div className="card-footer bg-light">
+              <small className="text-muted">
+                <i className="bi bi-info-circle me-1"></i>
+                <strong>Tips:</strong> Write a clear, detailed job description to attract the best candidates. 
+                Include specific requirements and highlight what makes your company a great place to work.
+              </small>
             </div>
           </div>
         </div>
