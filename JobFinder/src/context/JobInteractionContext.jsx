@@ -36,9 +36,10 @@ export const JobInteractionProvider = ({ children }) => {
     setError('');
 
     try {
+      // ✅ FIX: Use getCurrentUser functions instead of functions that require userId
       const [savedJobsData, appliedJobsData] = await Promise.allSettled([
-        userService.getSavedJobs(),
-        userService.getAppliedJobs()
+        userService.getCurrentUserSavedJobs(),    // ✅ No userId required
+        userService.getCurrentUserAppliedJobs()   // ✅ No userId required
       ]);
 
       if (savedJobsData.status === 'fulfilled') {
@@ -47,6 +48,7 @@ export const JobInteractionProvider = ({ children }) => {
         setSavedJobIds(jobs.map(job => job._id));
       } else {
         console.warn('Failed to fetch saved jobs:', savedJobsData.reason);
+        setError('Failed to fetch saved jobs: ' + savedJobsData.reason?.error || savedJobsData.reason?.message || 'Unknown error');
       }
 
       if (appliedJobsData.status === 'fulfilled') {
@@ -54,12 +56,13 @@ export const JobInteractionProvider = ({ children }) => {
         setAppliedJobs(jobs);
       } else {
         console.warn('Failed to fetch applied jobs:', appliedJobsData.reason);
+        setError('Failed to fetch applied jobs: ' + appliedJobsData.reason?.error || appliedJobsData.reason?.message || 'Unknown error');
       }
 
       setInitialized(true);
     } catch (err) {
       console.error('Error fetching user data:', err);
-      setError('Failed to load user data');
+      setError('Failed to load user data: ' + (err.error || err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -134,24 +137,19 @@ export const JobInteractionProvider = ({ children }) => {
       setSavedJobIds(prev => prev.filter(id => !jobIds.includes(id)));
     } catch (err) {
       console.error('Error bulk removing saved jobs:', err);
-      throw new Error('Failed to remove selected jobs');
+      throw new Error(err.error || 'Failed to remove jobs');
     }
   }, [isAuthenticated]);
 
-  const isJobSaved = useCallback((jobId) => savedJobIds.includes(jobId), [savedJobIds]);
+  // Check if a job is saved
+  const isJobSaved = useCallback((jobId) => {
+    return savedJobIds.includes(jobId);
+  }, [savedJobIds]);
 
-  const hasAppliedToJob = useCallback((jobId) => appliedJobs.some(job => job._id === jobId), [appliedJobs]);
-
-  const refreshData = useCallback(() => {
-    if (isAuthenticated && user) {
-      setInitialized(false);
-      fetchUserData();
-    }
-  }, [isAuthenticated, user, fetchUserData]);
-
-  const clearError = useCallback(() => {
-    setError('');
-  }, []);
+  // Check if a job is applied to
+  const isJobAppliedTo = useCallback((jobId) => {
+    return appliedJobs.some(job => job._id === jobId);
+  }, [appliedJobs]);
 
   const value = {
     savedJobs,
@@ -160,23 +158,12 @@ export const JobInteractionProvider = ({ children }) => {
     loading,
     error,
     initialized,
-
     toggleSaveJob,
     applyToJob,
-    bulkRemoveSavedJobs,
     isJobSaved,
-    hasAppliedToJob,
-    refreshData,
-    clearError,
-
-    // Additional aliases for compatibility
-    favorites: savedJobs,
-    isFavorited: isJobSaved,
-    toggleFavorite: toggleSaveJob,
-    addToFavorites: (jobId) => !isJobSaved(jobId) && toggleSaveJob(jobId),
-    removeFromFavorites: (jobId) => isJobSaved(jobId) && toggleSaveJob(jobId),
-    hasApplied: hasAppliedToJob,
-    setLoading
+    isJobAppliedTo,
+    bulkRemoveSavedJobs,
+    refetch: fetchUserData  // Allow manual refetch
   };
 
   return (
