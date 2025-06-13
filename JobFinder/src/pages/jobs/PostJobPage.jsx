@@ -120,67 +120,64 @@ const PostJobPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      setError('Please fix the errors above before submitting');
-      return;
-    }
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    setError('Please fix the errors above before submitting');
+    return;
+  }
 
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    
-    try {
-      // Prepare job data
-      const jobData = {
-        ...formData,
-        // Parse salary if provided
-        salary: formData.salary ? `$${formData.salary}` : undefined,
-        // Convert tags string to array
-        tags: formData.tags ? 
-          formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : 
-          []
-      };
+  setLoading(true);
+  setError('');
+  setSuccess('');
+  
+  try {
+    // ✅ FIXED: Only send fields that are allowed by the backend validation schema
+    const jobData = {
+      title: formData.title,
+      company: formData.company,
+      description: formData.description,
+      requirements: formData.requirements,
+      location: formData.location,
+      jobType: formData.jobType,
+      contactEmail: formData.contactEmail,
+      // Only include salary if it has a value
+      ...(formData.salary && { salary: formData.salary })
+    };
 
-      // Remove empty optional fields
-      Object.keys(jobData).forEach(key => {
-        if (jobData[key] === '' || jobData[key] === undefined) {
-          delete jobData[key];
-        }
+    console.log('Sending job data to backend:', jobData);
+
+    const response = await jobService.createJob(jobData);
+    
+    setSuccess('Job posted successfully!');
+    
+    // Redirect after a short delay
+    setTimeout(() => {
+      navigate('/my-listings', { 
+        state: { 
+          message: 'Job posted successfully!', 
+          newJobId: response.data?._id 
+        } 
       });
-
-      const response = await jobService.postJob(jobData);
-      
-      setSuccess('Job posted successfully!');
-      
-      // Redirect after a short delay
-      setTimeout(() => {
-        navigate('/my-listings', { 
-          state: { 
-            message: 'Job posted successfully!', 
-            newJobId: response.data._id 
-          } 
-        });
-      }, 1500);
-      
-    } catch (err) {
-      console.error('Failed to post job:', err);
-      
-      // Enhanced error handling
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.error) {
-        setError(err.error);
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError('Failed to post job. Please try again.');
-      }
-    } finally {
-      setLoading(false);
+    }, 1500);
+    
+  } catch (err) {
+    console.error('Failed to post job:', err);
+    
+    // Enhanced error handling
+    if (err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else if (err.error) {
+      setError(err.error);
+    } else if (err.message) {
+      setError(err.message);
+    } else {
+      setError('Failed to post job. Please try again.');
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const clearForm = () => {
     setFormData({
