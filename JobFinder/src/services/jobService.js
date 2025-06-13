@@ -127,24 +127,6 @@ export const getJobById = async (jobId) => {
   }
 };
 
-// Get jobs posted by the logged-in recruiter
-export const getMyListings = async () => {
-  try {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    
-    if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to view your listings" };
-    }
-
-    const response = await api.get(`${JOBS_URL}/my-listings`, {
-      headers: getAuthHeaders()
-    });
-    
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
 
 // Create a new job posting with validation
 export const createJob = async (jobData) => {
@@ -437,12 +419,136 @@ export const getJobStatistics = async () => {
     return handleApiError(error);
   }
 };
+ // Add these functions to your src/services/jobService.js file
 
+// Get job applicants (for recruiters)
+export const getJobApplicants = async (jobId) => {
+  try {
+    if (!jobId) {
+      throw new Error('Job ID is required');
+    }
 
-export default {
+    // Validate jobId format (basic ObjectId validation)
+    if (typeof jobId !== 'string' || jobId.length !== 24) {
+      throw new Error('Invalid job ID format');
+    }
+
+    const response = await api.get(`${JOBS_URL}/${jobId}/applicants`, {
+      headers: getAuthHeaders()
+    });
+    
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Download applicant resume
+export const downloadApplicantResume = async (jobId, applicantId) => {
+  try {
+    if (!jobId || !applicantId) {
+      throw new Error('Job ID and Applicant ID are required');
+    }
+
+    // Validate IDs format
+    if (typeof jobId !== 'string' || jobId.length !== 24 ||
+        typeof applicantId !== 'string' || applicantId.length !== 24) {
+      throw new Error('Invalid ID format');
+    }
+
+    const response = await api.get(`${JOBS_URL}/${jobId}/applicants/${applicantId}/resume`, {
+      headers: getAuthHeaders(),
+      responseType: 'blob'
+    });
+    
+    // Extract filename from response headers
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = 'resume.pdf';
+    if (contentDisposition) {
+      const matches = contentDisposition.match(/filename="(.+)"/);
+      if (matches) filename = matches[1];
+    }
+    
+    // Create download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true, filename };
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Get my job listings (for recruiters)
+export const getMyJobListings = async () => {
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    
+    if (!token) {
+      throw { response: { status: 401 }, message: "Please log in to view your listings" };
+    }
+
+    const response = await api.get(`${JOBS_URL}/my-listings`, {
+      headers: getAuthHeaders()
+    });
+    
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Advanced search function with query building
+export const searchJobsAdvanced = async (searchParams) => {
+  try {
+    const {
+      query = '',
+      location = '',
+      jobType = '',
+      company = '',
+      salaryMin = '',
+      salaryMax = '',
+      sortBy = 'date',
+      page = 1,
+      limit = 10
+    } = searchParams || {};
+
+    const params = new URLSearchParams();
+    
+    if (query) params.append('q', query);
+    if (location) params.append('location', location);
+    if (jobType) params.append('jobType', jobType);
+    if (company) params.append('company', company);
+    if (salaryMin) params.append('salaryMin', salaryMin);
+    if (salaryMax) params.append('salaryMax', salaryMax);
+    if (sortBy) params.append('sort', sortBy);
+    if (page) params.append('page', page);
+    if (limit) params.append('limit', limit);
+
+    const queryString = params.toString();
+    const url = queryString ? `${JOBS_URL}?${queryString}` : JOBS_URL;
+    
+    const response = await api.get(url, {
+      headers: getAuthHeaders()
+    });
+    
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// Default export with all functions
+const jobService = {
   getAllJobs,
   getJobById,
-  getMyListings,
+  getMyJobListings,
   createJob,
   updateJob,
   applyForJob,
@@ -451,5 +557,10 @@ export default {
   filterJobs,
   paginateJobs,
   searchJobs,
-  getJobStatistics
+  searchJobsAdvanced,
+  getJobStatistics,
+  getJobApplicants,
+  downloadApplicantResume
 };
+
+export default jobService;
