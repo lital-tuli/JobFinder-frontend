@@ -21,12 +21,7 @@ const PostJobPage = () => {
     description: '',
     requirements: '',
     contactEmail: '',
-    // Note: Additional fields removed as they're not supported by backend
-    // companyWebsite: '',
-    // applicationDeadline: '',
-    // experienceLevel: '',
-    // benefits: '',
-    // tags: ''
+    
   });
 
   // Enhanced validation

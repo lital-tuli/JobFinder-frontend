@@ -1,142 +1,149 @@
-import axios from "axios";
+import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-const USERS_URL = `${API_BASE_URL}/users`;
-
-// Create axios instance with default config
+// Create axios instance with base configuration
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 30000,
   headers: {
-    'Content-Type': 'application/json'
-  },
-  validateStatus: function (status) {
-    // Accept status codes from 200-399 (including 304)
-    return status >= 200 && status < 400;
+    'Content-Type': 'application/json',
   }
 });
 
-api.interceptors.response.use(
-  (response) => {
-    // Handle 304 responses as success
-    if (response.status === 304) {
-      console.log('304 Not Modified - user data unchanged');
-      response.data = response.data || {};
+// Add request interceptor for authentication
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return response;
+    return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
-    // Don't treat 304 as error
-    if (error.response && error.response.status === 304) {
-      console.log('304 intercepted in user service - returning success');
-      return Promise.resolve({
-        ...error.response,
-        data: error.response.data || {}
-      });
+    if (error.response?.status === 401) {
+      // Clear tokens on authentication error
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      // Optionally redirect to login
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
-const handleApiError = (error) => {
-  if (error.response && error.response.status === 304) {
-    console.log('User data not modified (304), using cached data');
-    return error.response.data || {};
-  }
-  
-  const errorMessage = 
-    error.response?.data?.message || 
-    error.response?.data || 
-    error.message || 
-    'An unexpected error occurred';
-  
-  console.error("User API Error:", {
-    message: errorMessage,
-    status: error.response?.status,
-    url: error.config?.url,
-    method: error.config?.method
-  });
-  
-  throw { error: errorMessage, status: error.response?.status };
-};
+const USERS_URL = '/users';
 
-// Helper to add auth token to requests
+// Helper function to get auth headers
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-  return token ? { "x-auth-token": token } : {};
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  return {
+    'Authorization': `Bearer ${token}`,
+    'x-auth-token': token // For backward compatibility if server expects this header
+  };
 };
 
-export const login = async (email, password, rememberMe = false) => {
-  try {
-    // Validate inputs
-    if (!email || !password) {
-      throw new Error("Email and password are required");
-    }
-
-    console.log('Attempting login for:', email);
-
-    const response = await api.post(`${USERS_URL}/login`, { email, password });
-    const responseData = response.data;
-    
-    console.log('Login response status:', response.status);
-    
-    if (responseData && responseData.token) {
-      // Store token based on remember me option
-      if (rememberMe) {
-        localStorage.setItem("token", responseData.token);
-        // Remove from session storage if it exists
-        sessionStorage.removeItem("token");
-      } else {
-        sessionStorage.setItem("token", responseData.token);
-        // Remove from local storage if it exists
-        localStorage.removeItem("token");
-      }
-      
-      console.log('Login successful, token stored');
-    }
-    
-    return responseData;
-  } catch (error) {
-    console.error('Login error:', error);
-    return handleApiError(error);
+// Helper function to handle API errors
+const handleApiError = (error) => {
+  if (error.response) {
+    // Server responded with error status
+    return {
+      error: true,
+      message: error.response.data?.message || error.response.data?.error || 'An error occurred',
+      status: error.response.status,
+      details: error.response.data
+    };
+  } else if (error.request) {
+    // Network error
+    return {
+      error: true,
+      message: 'Network error. Please check your connection.',
+      status: 0
+    };
+  } else {
+    // Other error
+    return {
+      error: true,
+      message: error.message || 'An unexpected error occurred',
+      status: 0
+    };
   }
 };
-    
-// Register user
-export const register = async (userData) => {
+
+// Authentication Functions
+export const login = async (credentials) => {
   try {
-    // Set default values if not provided
-    const dataWithDefaults = {
-      ...userData,
-      role: userData.role || 'jobseeker',
-      profession: userData.profession || 'Not specified',
-      bio: userData.bio || 'No bio provided'
-    };
-
-    console.log('Attempting registration with data:', dataWithDefaults);
-
-    const response = await api.post(USERS_URL, dataWithDefaults);
+    const response = await api.post(`${USERS_URL}/login`, credentials);
     
-    console.log('Registration response status:', response.status);
+    // Store token if provided
+    if (response.data.token) {
+      if (credentials.rememberMe) {
+        localStorage.setItem('token', response.data.token);
+      } else {
+        sessionStorage.setItem('token', response.data.token);
+      }
+    }
     
     return response.data;
   } catch (error) {
-    console.error('Registration error:', error);
     return handleApiError(error);
   }
 };
 
-export const getUserById = async (userId) => {
+export const register = async (userData) => {
   try {
-    if (!userId) {
-      throw new Error("User ID is required");
+    const response = await api.post(`${USERS_URL}/`, userData);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const logout = async () => {
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    
+    if (token) {
+      // Call logout endpoint if token exists
+      await api.post(`${USERS_URL}/logout`, {}, {
+        headers: getAuthHeaders()
+      });
+    }
+    
+    // Clear tokens regardless of API call success
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    
+    return { success: true, message: "Logged out successfully" };
+  } catch (error) {
+    // Still clear tokens even if API call fails
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    
+    console.error('Logout error:', error);
+    return { success: true, message: "Logged out successfully" };
+  }
+};
+
+export const checkAuth = async () => {
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    
+    if (!token) {
+      throw { response: { status: 401 }, message: "No authentication token found" };
     }
 
-    const response = await api.get(`${USERS_URL}/${userId}`, {
+    const response = await api.get(`${USERS_URL}/check-auth`, {
       headers: getAuthHeaders()
     });
     
     return response.data;
   } catch (error) {
+    // Handle 304 for auth check
     if (error.response && error.response.status === 304) {
       return error.response.data || {};
     }
@@ -144,30 +151,35 @@ export const getUserById = async (userId) => {
   }
 };
 
-// Update user profile
-export const updateUser = async (userId, userData) => {
+// User Profile Functions
+export const getUserById = async (userId) => {
   try {
-    if (!userId) {
-      throw new Error("User ID is required");
-    }
-
-    const response = await api.put(`${USERS_URL}/${userId}`, userData, {
+    const response = await api.get(`${USERS_URL}/${userId}`, {
       headers: getAuthHeaders()
     });
-    
     return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Get current user profile
+export const updateUser = async (userId, userData) => {
+  try {
+    const response = await api.put(`${USERS_URL}/${userId}`, userData, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const getCurrentUser = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "No authentication token found" };
+      throw { response: { status: 401 }, message: "Please log in to view profile" };
     }
 
     const response = await api.get(`${USERS_URL}/profile/me`, {
@@ -176,20 +188,16 @@ export const getCurrentUser = async () => {
     
     return response.data;
   } catch (error) {
-    if (error.response && error.response.status === 304) {
-      return error.response.data || {};
-    }
     return handleApiError(error);
   }
 };
 
-// Update current user profile
 export const updateCurrentUser = async (userData) => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to update your profile" };
+      throw { response: { status: 401 }, message: "Please log in to update profile" };
     }
 
     const response = await api.put(`${USERS_URL}/profile/me`, userData, {
@@ -202,12 +210,9 @@ export const updateCurrentUser = async (userData) => {
   }
 };
 
+// Job Related Functions
 export const getSavedJobs = async (userId) => {
   try {
-    if (!userId) {
-      throw new Error("User ID is required");
-    }
-
     const response = await api.get(`${USERS_URL}/${userId}/saved-jobs`, {
       headers: getAuthHeaders()
     });
@@ -223,10 +228,6 @@ export const getSavedJobs = async (userId) => {
 
 export const getAppliedJobs = async (userId) => {
   try {
-    if (!userId) {
-      throw new Error("User ID is required");
-    }
-
     const response = await api.get(`${USERS_URL}/${userId}/applied-jobs`, {
       headers: getAuthHeaders()
     });
@@ -240,7 +241,6 @@ export const getAppliedJobs = async (userId) => {
   }
 };
 
-// Get current user's saved jobs
 export const getCurrentUserSavedJobs = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -262,7 +262,6 @@ export const getCurrentUserSavedJobs = async () => {
   }
 };
 
-// Get current user's applied jobs
 export const getCurrentUserAppliedJobs = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -284,7 +283,6 @@ export const getCurrentUserAppliedJobs = async () => {
   }
 };
 
-// Get job activity summary
 export const getJobActivitySummary = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -299,7 +297,6 @@ export const getJobActivitySummary = async () => {
     
     return response.data;
   } catch (error) {
-    // ✅ FIX: Handle 304 for job activity
     if (error.response && error.response.status === 304) {
       return error.response.data || {};
     }
@@ -307,7 +304,7 @@ export const getJobActivitySummary = async () => {
   }
 };
 
-// Upload profile picture
+// File Upload Functions
 export const uploadProfilePicture = async (file) => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -347,7 +344,6 @@ export const uploadProfilePicture = async (file) => {
   }
 };
 
-// Upload resume
 export const uploadResume = async (file) => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -391,7 +387,6 @@ export const uploadResume = async (file) => {
   }
 };
 
-// Delete profile picture
 export const deleteProfilePicture = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -410,7 +405,6 @@ export const deleteProfilePicture = async () => {
   }
 };
 
-// Delete resume
 export const deleteResume = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -429,7 +423,6 @@ export const deleteResume = async () => {
   }
 };
 
-// Get user files information
 export const getUserFiles = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -444,7 +437,6 @@ export const getUserFiles = async () => {
     
     return response.data;
   } catch (error) {
-    // ✅ FIX: Handle 304 for user files
     if (error.response && error.response.status === 304) {
       return error.response.data || {};
     }
@@ -452,7 +444,6 @@ export const getUserFiles = async () => {
   }
 };
 
-// Download resume
 export const downloadResume = async () => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -470,7 +461,7 @@ export const downloadResume = async () => {
     let filename = 'resume.pdf';
     const contentDisposition = response.headers['content-disposition'];
     if (contentDisposition) {
-      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+      const matches = /filename[^;=\n]*=((['"]).+?\2|[^;\n]*)/.exec(contentDisposition);
       if (matches && matches[1]) {
         filename = matches[1].replace(/['"]/g, '');
       }
@@ -492,60 +483,12 @@ export const downloadResume = async () => {
   }
 };
 
-// Check authentication status
-export const checkAuth = async () => {
-  try {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    
-    if (!token) {
-      throw { response: { status: 401 }, message: "No authentication token found" };
-    }
-
-    const response = await api.get(`${USERS_URL}/check-auth`, {
-      headers: getAuthHeaders()
-    });
-    
-    return response.data;
-  } catch (error) {
-    // ✅ FIX: Handle 304 for auth check
-    if (error.response && error.response.status === 304) {
-      return error.response.data || {};
-    }
-    return handleApiError(error);
-  }
-};
-
-// Logout user
-export const logout = async () => {
-  try {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    
-    if (token) {
-      // Call logout endpoint if token exists
-      await api.post(`${USERS_URL}/logout`, {}, {
-        headers: getAuthHeaders()
-      });
-    }
-    
-    // Clear tokens regardless of API call success
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    
-    return { success: true, message: "Logged out successfully" };
-  } catch (error) {
-    // Still clear tokens even if API call fails
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    
-    console.error('Logout error:', error);
-    return { success: true, message: "Logged out successfully" };
-  }
-};
-
 // Default export with all functions
 const userService = {
   login,
   register,
+  logout,
+  checkAuth,
   getUserById,
   updateUser,
   getCurrentUser,
@@ -560,9 +503,7 @@ const userService = {
   deleteProfilePicture,
   deleteResume,
   getUserFiles,
-  downloadResume,
-  checkAuth,
-  logout
+  downloadResume
 };
 
 export default userService;

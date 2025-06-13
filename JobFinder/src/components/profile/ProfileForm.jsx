@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import FormField from '../common/FormField/FormField';
+import LoadingSpinner from '../common/LoadingSpinner';
+import ErrorMessage from '../common/messages/ErrorMessage';
+import SuccessMessage from '../common/messages/SuccessMessage';
+import { uploadProfilePicture } from '../../services/userService';
 
 const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
   const [formData, setFormData] = useState({
@@ -18,8 +22,16 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
 
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
+  
+  // Profile picture upload states
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState('');
+  const [profileUploadLoading, setProfileUploadLoading] = useState(false);
+  const [profileUploadError, setProfileUploadError] = useState('');
+  const [profileUploadSuccess, setProfileUploadSuccess] = useState('');
+  
+  // File input ref
+  const profileImageInputRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -35,7 +47,16 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
         linkedin: user.linkedin || '',
         github: user.github || ''
       });
-      setProfilePicturePreview(user.profilePicture || '');
+      
+      // Set profile picture preview with proper URL handling
+      if (user.profilePicture) {
+        setProfilePicturePreview(
+          user.profilePicture.startsWith('http') 
+            ? user.profilePicture 
+            : `/uploads/${user.profilePicture}`
+        );
+      }
+      
       setErrors({});
       setIsDirty(false);
     }
@@ -111,51 +132,125 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
     }
   };
 
+  // Profile Image Upload Functions
+  const validateImageFile = (file) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Please select a valid image file (JPEG, PNG, GIF, or WebP)';
+    }
+
+    if (file.size > maxSize) {
+      return 'Image file size must be less than 5MB';
+    }
+
+    return null;
+  };
+
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setProfileUploadError('');
+    setProfileUploadSuccess('');
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setProfileUploadError(validationError);
+      if (profileImageInputRef.current) {
+        profileImageInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setProfilePictureFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setProfilePicturePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+    
+    setIsDirty(true);
+  };
+
+  const uploadProfileImage = async (file) => {
+    setProfileUploadLoading(true);
+    setProfileUploadError('');
+
+    try {
+      // Use the proper userService function
+      const response = await uploadProfilePicture(file);
+      
+      if (response.error) {
+        throw new Error(response.message || 'Failed to upload profile picture');
+      }
+
+      setProfileUploadSuccess('Profile image uploaded successfully!');
+      
+      // Update the preview with the new image
+      if (response.profilePicture) {
+        setProfilePicturePreview(`/uploads/${response.profilePicture}`);
+      }
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setProfileUploadSuccess(''), 3000);
+      
+      return response.profilePicture;
+    } catch (error) {
+      setProfileUploadError(error.message || 'Failed to upload profile picture');
+      throw error;
+    } finally {
+      setProfileUploadLoading(false);
+    }
+  };
+
+  const removeProfileImage = () => {
+    setProfilePictureFile(null);
+    setProfilePicturePreview('');
+    setProfileUploadError('');
+    setProfileUploadSuccess('');
+    if (profileImageInputRef.current) {
+      profileImageInputRef.current.value = '';
+    }
+    setIsDirty(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     let imageUrl = user.profilePicture || '';
 
-    // Upload image if new file selected
-    if (profilePictureFile) {
-      const imageData = new FormData();
-      imageData.append('image', profilePictureFile);
-
-      try {
-        const res = await fetch('/api/upload/profile-picture', {
-          method: 'POST',
-          body: imageData
-        });
-        const data = await res.json();
-        imageUrl = data.url;
-      } catch (err) {
-        console.error('Image upload failed:', err);
-        return;
-      }
-    }
-
-    const profileData = {
-      name: {
-        first: formData.firstName.trim(),
-        last: formData.lastName.trim()
-      },
-      email: formData.email.trim(),
-      phone: formData.phone.trim() || undefined,
-      profession: formData.profession.trim() || undefined,
-      bio: formData.bio.trim() || undefined,
-      location: formData.location.trim() || undefined,
-      website: formData.website.trim() || undefined,
-      linkedin: formData.linkedin.trim() || undefined,
-      github: formData.github.trim() || undefined,
-      profilePicture: imageUrl || undefined
-    };
-
-    Object.keys(profileData).forEach(key => {
-      if (profileData[key] === undefined) delete profileData[key];
-    });
-
     try {
+      // Upload profile image if new file selected
+      if (profilePictureFile) {
+        imageUrl = await uploadProfileImage(profilePictureFile);
+      }
+
+      const profileData = {
+        name: {
+          first: formData.firstName.trim(),
+          last: formData.lastName.trim()
+        },
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+        profession: formData.profession.trim() || undefined,
+        bio: formData.bio.trim() || undefined,
+        location: formData.location.trim() || undefined,
+        website: formData.website.trim() || undefined,
+        linkedin: formData.linkedin.trim() || undefined,
+        github: formData.github.trim() || undefined,
+        profilePicture: imageUrl || undefined
+      };
+
+      // Remove undefined values
+      Object.keys(profileData).forEach(key => {
+        if (profileData[key] === undefined) delete profileData[key];
+      });
+
       await onSave(profileData);
       setIsDirty(false);
     } catch (error) {
@@ -169,209 +264,224 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="profile-form">
+    <form onSubmit={handleSubmit} className="enhanced-profile-form">
+      {/* Profile Image Section */}
+      <div className="mb-4">
+        <h6 className="fw-semibold mb-3">
+          <i className="bi bi-camera me-2"></i>Profile Picture
+        </h6>
+        
+        <div className="row align-items-center">
+          <div className="col-md-4">
+            <div className="profile-image-container text-center">
+              {profilePicturePreview ? (
+                <div className="position-relative d-inline-block">
+                  <img
+                    src={profilePicturePreview}
+                    alt="Profile Preview"
+                    className="rounded-circle border"
+                    style={{ width: '120px', height: '120px', objectFit: 'cover' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle"
+                    onClick={removeProfileImage}
+                    style={{ width: '30px', height: '30px' }}
+                  >
+                    <i className="bi bi-x"></i>
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  className="bg-light rounded-circle mx-auto d-flex align-items-center justify-content-center border"
+                  style={{ width: '120px', height: '120px', fontSize: '2.5rem', color: '#6c757d' }}
+                >
+                  <i className="bi bi-person"></i>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="col-md-8">
+            <input
+              ref={profileImageInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              className="form-control mb-2"
+              onChange={handleProfileImageChange}
+              disabled={loading || profileUploadLoading}
+            />
+            <small className="text-muted d-block mb-2">
+              Supported formats: JPEG, PNG, GIF, WebP • Max size: 5MB
+            </small>
+            
+            {profileUploadLoading && (
+              <LoadingSpinner size="sm" message="Uploading image..." inline />
+            )}
+            
+            {profileUploadError && (
+              <ErrorMessage error={profileUploadError} className="mt-2" />
+            )}
+            
+            {profileUploadSuccess && (
+              <SuccessMessage message={profileUploadSuccess} className="mt-2" />
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Basic Information */}
       <div className="mb-4">
-        <h6 className="fw-semibold mb-3"><i className="bi bi-person me-2"></i>Basic Information</h6>
+        <h6 className="fw-semibold mb-3">
+          <i className="bi bi-person me-2"></i>Basic Information
+        </h6>
+        
         <div className="row">
-
-          {/* תמונת פרופיל */}
-          <div className="col-md-6 mb-3">
-            <label className="form-label">Profile Picture</label>
-            {profilePicturePreview && (
-              <div className="mb-2">
-                <img
-                  src={profilePicturePreview}
-                  alt="Profile"
-                  style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover' }}
-                />
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="form-control"
-              disabled={loading}
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  setProfilePictureFile(file);
-                  setProfilePicturePreview(URL.createObjectURL(file));
-                  setIsDirty(true);
-                }
-              }}
-            />
-          </div>
-
-          {/* First Name */}
-          <div className="col-md-6 mb-3">
+          <div className="col-md-6">
             <FormField
               label="First Name"
-              name="firstName"
+              type="text"
               value={formData.firstName}
+              onChange={(value) => handleInputChange('firstName', value)}
               error={errors.firstName}
-              onChange={(val) => handleInputChange('firstName', val)}
-              validator={(val) => validateField('firstName', val)}
-              validateOnBlur
               required
               disabled={loading}
-              placeholder="Enter your first name"
             />
           </div>
-
-          <div className="col-md-6 mb-3">
+          <div className="col-md-6">
             <FormField
               label="Last Name"
-              name="lastName"
+              type="text"
               value={formData.lastName}
+              onChange={(value) => handleInputChange('lastName', value)}
               error={errors.lastName}
-              onChange={(val) => handleInputChange('lastName', val)}
-              validator={(val) => validateField('lastName', val)}
-              validateOnBlur
               required
               disabled={loading}
-              placeholder="Enter your last name"
             />
           </div>
-
-          <div className="col-md-6 mb-3">
+        </div>
+        
+        <div className="row">
+          <div className="col-md-6">
             <FormField
-              label="Email Address"
-              name="email"
+              label="Email"
               type="email"
               value={formData.email}
+              onChange={(value) => handleInputChange('email', value)}
               error={errors.email}
-              onChange={(val) => handleInputChange('email', val)}
-              validator={(val) => validateField('email', val)}
-              validateOnBlur
               required
               disabled={loading}
-              placeholder="your.email@example.com"
-              helpText="This will be your login email"
             />
           </div>
-
-          <div className="col-md-6 mb-3">
+          <div className="col-md-6">
             <FormField
-              label="Phone Number"
-              name="phone"
+              label="Phone"
               type="tel"
               value={formData.phone}
+              onChange={(value) => handleInputChange('phone', value)}
               error={errors.phone}
-              onChange={(val) => handleInputChange('phone', val)}
-              validator={(val) => validateField('phone', val)}
-              validateOnBlur
-              placeholder="+1 (555) 123-4567"
+              placeholder="e.g., +1-555-123-4567"
               disabled={loading}
-              helpText="Optional - for contact purposes"
             />
           </div>
+        </div>
+      </div>
 
-          <div className="col-md-6 mb-3">
+      {/* Professional Information */}
+      <div className="mb-4">
+        <h6 className="fw-semibold mb-3">
+          <i className="bi bi-briefcase me-2"></i>Professional Information
+        </h6>
+        
+        <div className="row">
+          <div className="col-md-6">
             <FormField
               label="Profession"
-              name="profession"
+              type="text"
               value={formData.profession}
+              onChange={(value) => handleInputChange('profession', value)}
               error={errors.profession}
-              onChange={(val) => handleInputChange('profession', val)}
-              validator={(val) => validateField('profession', val)}
-              validateOnBlur
-              placeholder="e.g., Software Engineer"
+              placeholder="e.g., Software Developer"
               disabled={loading}
             />
           </div>
-
-          <div className="col-md-6 mb-3">
+          <div className="col-md-6">
             <FormField
               label="Location"
-              name="location"
+              type="text"
               value={formData.location}
+              onChange={(value) => handleInputChange('location', value)}
               error={errors.location}
-              onChange={(val) => handleInputChange('location', val)}
-              validator={(val) => validateField('location', val)}
-              validateOnBlur
-              placeholder="e.g., Tel Aviv, IL"
+              placeholder="e.g., New York, NY"
               disabled={loading}
             />
           </div>
         </div>
-
-        <div className="mb-3">
-          <FormField
-            label="Professional Summary"
-            name="bio"
-            type="textarea"
-            value={formData.bio}
-            error={errors.bio}
-            onChange={(val) => handleInputChange('bio', val)}
-            validator={(val) => validateField('bio', val)}
-            validateOnChange
-            rows={4}
-            helpText={`${formData.bio.length}/500 characters`}
-            disabled={loading}
-            placeholder="Tell us about your background, goals, and achievements..."
-          />
-        </div>
+        
+        <FormField
+          label="Bio"
+          type="textarea"
+          value={formData.bio}
+          onChange={(value) => handleInputChange('bio', value)}
+          error={errors.bio}
+          placeholder="Tell us about yourself..."
+          rows={4}
+          maxLength={500}
+          disabled={loading}
+        />
       </div>
 
-      {/* Professional Links */}
+      {/* Social Links */}
       <div className="mb-4">
-        <h6 className="fw-semibold mb-3"><i className="bi bi-link-45deg me-2"></i>Professional Links</h6>
+        <h6 className="fw-semibold mb-3">
+          <i className="bi bi-globe me-2"></i>Social Links
+        </h6>
+        
+        <FormField
+          label="Website"
+          type="url"
+          value={formData.website}
+          onChange={(value) => handleInputChange('website', value)}
+          error={errors.website}
+          placeholder="https://your-website.com"
+          disabled={loading}
+        />
+        
         <div className="row">
-          <div className="col-md-4 mb-3">
-            <FormField
-              label="Website"
-              name="website"
-              type="url"
-              value={formData.website}
-              error={errors.website}
-              onChange={(val) => handleInputChange('website', val)}
-              validator={(val) => validateField('website', val)}
-              validateOnBlur
-              disabled={loading}
-              placeholder="https://yourwebsite.com"
-            />
-          </div>
-          <div className="col-md-4 mb-3">
+          <div className="col-md-6">
             <FormField
               label="LinkedIn"
-              name="linkedin"
               type="url"
               value={formData.linkedin}
+              onChange={(value) => handleInputChange('linkedin', value)}
               error={errors.linkedin}
-              onChange={(val) => handleInputChange('linkedin', val)}
-              validator={(val) => validateField('linkedin', val)}
-              validateOnBlur
+              placeholder="https://linkedin.com/in/your-profile"
               disabled={loading}
-              placeholder="https://linkedin.com/in/..."
             />
           </div>
-          <div className="col-md-4 mb-3">
+          <div className="col-md-6">
             <FormField
               label="GitHub"
-              name="github"
               type="url"
               value={formData.github}
+              onChange={(value) => handleInputChange('github', value)}
               error={errors.github}
-              onChange={(val) => handleInputChange('github', val)}
-              validator={(val) => validateField('github', val)}
-              validateOnBlur
+              placeholder="https://github.com/your-username"
               disabled={loading}
-              placeholder="https://github.com/..."
             />
           </div>
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="d-flex justify-content-end gap-2 pt-3 border-top">
+      {/* Form Actions */}
+      <div className="d-flex justify-content-end gap-2">
         <button
           type="button"
           className="btn btn-outline-secondary"
           onClick={handleCancel}
           disabled={loading}
         >
-          <i className="bi bi-x-circle me-1"></i>Cancel
+          Cancel
         </button>
         <button
           type="submit"
@@ -380,14 +490,11 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
         >
           {loading ? (
             <>
-              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Saving...
+              <LoadingSpinner size="sm" inline />
+              <span className="ms-2">Saving...</span>
             </>
           ) : (
-            <>
-              <i className="bi bi-check-circle me-1"></i>
-              Save Changes
-            </>
+            'Save Profile'
           )}
         </button>
       </div>
@@ -396,7 +503,7 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
 };
 
 ProfileForm.propTypes = {
-  user: PropTypes.object.isRequired,
+  user: PropTypes.object,
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   loading: PropTypes.bool
