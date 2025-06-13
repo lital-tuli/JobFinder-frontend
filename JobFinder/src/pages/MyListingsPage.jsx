@@ -1,4 +1,3 @@
-// src/pages/MyListingsPage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import jobService from '../services/jobService';
@@ -12,7 +11,7 @@ const MyListingsPage = () => {
 
   useEffect(() => {
     // Check for success message from post job page
-    if (location.state?.success) {
+    if (location.state?.success || location.state?.message) {
       setSuccessMessage(location.state.message || 'Operation successful');
       // Clear the state to prevent message from showing again on page refresh
       window.history.replaceState({}, document.title);
@@ -22,10 +21,16 @@ const MyListingsPage = () => {
       setLoading(true);
       setError('');
       try {
-        const data = await jobService.getMyListings();
-        setJobs(data);
+        // ✅ FIXED: Use correct function name
+        const data = await jobService.getMyJobListings();
+        console.log('My listings data:', data);
+        
+        // ✅ FIXED: Ensure we have an array
+        const jobsArray = Array.isArray(data) ? data : [];
+        setJobs(jobsArray);
       } catch (err) {
-        setError(err.error || 'Failed to fetch job listings');
+        console.error('Failed to fetch my job listings:', err);
+        setError(err.error || err.message || 'Failed to fetch job listings');
       } finally {
         setLoading(false);
       }
@@ -108,73 +113,103 @@ const MyListingsPage = () => {
           <p className="mt-2 text-muted">Loading your job listings...</p>
         </div>
       ) : jobs.length === 0 ? (
-        <div className="text-center py-5 bg-light rounded">
-          <i className="bi bi-clipboard mb-3 text-muted" style={{ fontSize: '3rem' }}></i>
-          <h3>No Job Listings</h3>
-          <p className="text-muted mb-4">You haven't posted any jobs yet.</p>
-          <Link to="/post-job" className="btn btn-primary">
-            Post Your First Job
-          </Link>
+        <div className="text-center py-5">
+          <div className="card shadow-sm border-0">
+            <div className="card-body p-5">
+              <i className="bi bi-briefcase text-muted mb-3" style={{ fontSize: '4rem' }}></i>
+              <h3 className="fw-bold mb-3">No Job Listings</h3>
+              <p className="text-muted mb-4">You haven't posted any jobs yet.</p>
+              <Link to="/post-job" className="btn btn-primary">
+                <i className="bi bi-plus-circle me-2"></i>Post Your First Job
+              </Link>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="card shadow-sm border-0">
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0">
-              <thead className="bg-light">
-                <tr>
-                  <th>Job Title</th>
-                  <th>Posted Date</th>
-                  <th>Status</th>
-                  <th>Applications</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((job) => (
-                  <tr key={job._id}>
-                    <td>
-                      <div>
-                        <h6 className="mb-0">{job.title}</h6>
-                        <div className="d-flex align-items-center">
-                          <small className="text-muted me-2">{job.company}</small>
-                          <span className={`badge ${getJobTypeBadgeClass(job.jobType)}`}>
-                            {job.jobType}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{formatDate(job.createdAt)}</td>
-                    <td>
+        <div className="row">
+          {jobs.map((job) => (
+            <div key={job._id} className="col-12 mb-4">
+              <div className="card shadow-sm border-0 h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start mb-3">
+                    <div className="flex-grow-1">
+                      <h5 className="card-title fw-bold mb-2">
+                        <Link 
+                          to={`/jobs/${job._id}`} 
+                          className="text-decoration-none text-dark"
+                        >
+                          {job.title}
+                        </Link>
+                      </h5>
+                      <p className="text-muted mb-2">
+                        <i className="bi bi-building me-2"></i>
+                        {job.company}
+                      </p>
+                      <p className="text-muted mb-2">
+                        <i className="bi bi-geo-alt me-2"></i>
+                        {job.location}
+                      </p>
+                      {job.salary && (
+                        <p className="text-muted mb-2">
+                          <i className="bi bi-currency-dollar me-2"></i>
+                          {job.salary}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-end">
+                      <span className={`badge ${getJobTypeBadgeClass(job.jobType)} mb-2`}>
+                        {job.jobType}
+                      </span>
+                      <br />
                       <span className={`badge ${job.isActive ? 'bg-success' : 'bg-secondary'}`}>
                         {job.isActive ? 'Active' : 'Inactive'}
                       </span>
-                    </td>
-                    <td>
-                      <Link to={`/job/${job._id}/applications`} className="text-decoration-none">
-                        {job.applicants?.length || 0} applications
+                    </div>
+                  </div>
+
+                  <p className="card-text text-muted small">
+                    {job.description && job.description.length > 150 
+                      ? job.description.substring(0, 150) + '...' 
+                      : job.description}
+                  </p>
+
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div className="text-muted small">
+                      <i className="bi bi-calendar me-1"></i>
+                      Posted: {formatDate(job.createdAt)}
+                      {job.applicants && job.applicants.length > 0 && (
+                        <span className="ms-3">
+                          <i className="bi bi-people me-1"></i>
+                          {job.applicants.length} applicant{job.applicants.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="btn-group">
+                      <Link 
+                        to={`/jobs/${job._id}`} 
+                        className="btn btn-outline-primary btn-sm"
+                      >
+                        <i className="bi bi-eye me-1"></i>View
                       </Link>
-                    </td>
-                    <td>
-                      <div className="btn-group">
-                        <Link to={`/jobs/${job._id}`} className="btn btn-sm btn-outline-primary">
-                          View
-                        </Link>
-                        <Link to={`/edit-job/${job._id}`} className="btn btn-sm btn-outline-secondary">
-                          Edit
-                        </Link>
-                        <button 
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => handleDeleteJob(job._id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <Link 
+                        to={`/jobs/${job._id}/edit`} 
+                        className="btn btn-outline-secondary btn-sm"
+                      >
+                        <i className="bi bi-pencil me-1"></i>Edit
+                      </Link>
+                      <button 
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => handleDeleteJob(job._id)}
+                      >
+                        <i className="bi bi-trash me-1"></i>Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
