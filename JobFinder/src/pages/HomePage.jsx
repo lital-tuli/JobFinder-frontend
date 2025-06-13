@@ -9,8 +9,7 @@ import JobCategoriesSection from '../components/sections/home/JobCategoriesSecti
 import HowItWorksSection from '../components/sections/home/HowItWorksSection';
 import TestimonialsSection from '../components/sections/home/TestimonialsSection';
 import CTASection from '../components/sections/home/CTASection';
-import EnhancedJobFilters from '../components/EnhancedJobFilters'; 
-
+import EnhancedJobFilters from "../components/JobSearch/EnhancedJobFilters";
 const HomePage = () => {
   // Basic state
   const [searchTerm, setSearchTerm] = useState('');
