@@ -29,8 +29,10 @@ api.interceptors.response.use(
       // Clear tokens on authentication error
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
-      // Optionally redirect to login
-      window.location.href = '/login';
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -47,50 +49,53 @@ const getAuthHeaders = () => {
   };
 };
 
-// Helper function to handle API errors
+// Helper function to handle API errors - FIXED to throw instead of return
 const handleApiError = (error) => {
   if (error.response) {
     // Server responded with error status
-    return {
-      error: true,
-      message: error.response.data?.message || error.response.data?.error || 'An error occurred',
-      status: error.response.status,
-      details: error.response.data
-    };
+    const message = error.response.data?.message || 
+                   error.response.data?.error || 
+                   'An error occurred';
+    throw new Error(message);
   } else if (error.request) {
     // Network error
-    return {
-      error: true,
-      message: 'Network error. Please check your connection.',
-      status: 0
-    };
+    throw new Error('Network error. Please check your connection.');
   } else {
     // Other error
-    return {
-      error: true,
-      message: error.message || 'An unexpected error occurred',
-      status: 0
-    };
+    throw new Error(error.message || 'An unexpected error occurred');
   }
 };
 
-// Authentication Functions
+// =============================================================================
+// AUTHENTICATION FUNCTIONS - FIXED
+// =============================================================================
+
 export const login = async (credentials) => {
   try {
     const response = await api.post(`${USERS_URL}/login`, credentials);
     
-    // Store token if provided
-    if (response.data.token) {
-      if (credentials.rememberMe) {
-        localStorage.setItem('token', response.data.token);
-      } else {
-        sessionStorage.setItem('token', response.data.token);
-      }
+    // Verify we got a token and user data
+    if (!response.data.token || !response.data.user) {
+      throw new Error('Invalid response from server - missing token or user data');
+    }
+    
+    // Store token based on remember me preference
+    if (credentials.rememberMe) {
+      localStorage.setItem('token', response.data.token);
+      sessionStorage.removeItem('token'); // Clear from session if exists
+    } else {
+      sessionStorage.setItem('token', response.data.token);
+      localStorage.removeItem('token'); // Clear from local if exists
     }
     
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    // Clear any existing tokens on login failure
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    
+    // Use our error handler which now throws
+    handleApiError(error);
   }
 };
 
@@ -99,34 +104,30 @@ export const register = async (userData) => {
     const response = await api.post(`${USERS_URL}/`, userData);
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
 export const logout = async () => {
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  
   try {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    
     if (token) {
       // Call logout endpoint if token exists
       await api.post(`${USERS_URL}/logout`, {}, {
         headers: getAuthHeaders()
       });
     }
-    
-    // Clear tokens regardless of API call success
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    
-    return { success: true, message: "Logged out successfully" };
   } catch (error) {
-    // Still clear tokens even if API call fails
+    // Log error but don't throw - logout should always succeed locally
+    console.warn('Server logout failed:', error.message);
+  } finally {
+    // Always clear tokens regardless of API call success/failure
     localStorage.removeItem("token");
     sessionStorage.removeItem("token");
-    
-    console.error('Logout error:', error);
-    return { success: true, message: "Logged out successfully" };
   }
+  
+  return { success: true, message: "Logged out successfully" };
 };
 
 export const checkAuth = async () => {
@@ -134,7 +135,7 @@ export const checkAuth = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "No authentication token found" };
+      throw new Error("No authentication token found");
     }
 
     const response = await api.get(`${USERS_URL}/check-auth`, {
@@ -143,15 +144,24 @@ export const checkAuth = async () => {
     
     return response.data;
   } catch (error) {
-    // Handle 304 for auth check
-    if (error.response && error.response.status === 304) {
+    // Clear invalid tokens
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    
+    if (error.response?.status === 401) {
+      throw new Error("Authentication token expired or invalid");
+    } else if (error.response?.status === 304) {
+      // Handle 304 Not Modified
       return error.response.data || {};
     }
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
-// User Profile Functions
+// =============================================================================
+// USER PROFILE FUNCTIONS - FIXED
+// =============================================================================
+
 export const getUserById = async (userId) => {
   try {
     const response = await api.get(`${USERS_URL}/${userId}`, {
@@ -159,7 +169,7 @@ export const getUserById = async (userId) => {
     });
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -170,7 +180,7 @@ export const updateUser = async (userId, userData) => {
     });
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -179,7 +189,7 @@ export const getCurrentUser = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to view profile" };
+      throw new Error("Please log in to view profile");
     }
 
     const response = await api.get(`${USERS_URL}/profile/me`, {
@@ -188,7 +198,7 @@ export const getCurrentUser = async () => {
     
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -197,7 +207,7 @@ export const updateCurrentUser = async (userData) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to update profile" };
+      throw new Error("Please log in to update profile");
     }
 
     const response = await api.put(`${USERS_URL}/profile/me`, userData, {
@@ -206,11 +216,14 @@ export const updateCurrentUser = async (userData) => {
     
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
-// Job Related Functions
+// =============================================================================
+// JOB RELATED FUNCTIONS - FIXED
+// =============================================================================
+
 export const getSavedJobs = async (userId) => {
   try {
     const response = await api.get(`${USERS_URL}/${userId}/saved-jobs`, {
@@ -222,7 +235,7 @@ export const getSavedJobs = async (userId) => {
     if (error.response && error.response.status === 304) {
       return error.response.data || [];
     }
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -237,7 +250,7 @@ export const getAppliedJobs = async (userId) => {
     if (error.response && error.response.status === 304) {
       return error.response.data || [];
     }
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -246,7 +259,7 @@ export const getCurrentUserSavedJobs = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to view saved jobs" };
+      throw new Error("Please log in to view saved jobs");
     }
 
     const response = await api.get(`${USERS_URL}/jobs/saved`, {
@@ -258,7 +271,7 @@ export const getCurrentUserSavedJobs = async () => {
     if (error.response && error.response.status === 304) {
       return error.response.data || [];
     }
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -267,7 +280,7 @@ export const getCurrentUserAppliedJobs = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to view applied jobs" };
+      throw new Error("Please log in to view applied jobs");
     }
 
     const response = await api.get(`${USERS_URL}/jobs/applied`, {
@@ -279,7 +292,7 @@ export const getCurrentUserAppliedJobs = async () => {
     if (error.response && error.response.status === 304) {
       return error.response.data || [];
     }
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -288,7 +301,7 @@ export const getJobActivitySummary = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to view job activity" };
+      throw new Error("Please log in to view job activity");
     }
 
     const response = await api.get(`${USERS_URL}/jobs/activity`, {
@@ -300,17 +313,20 @@ export const getJobActivitySummary = async () => {
     if (error.response && error.response.status === 304) {
       return error.response.data || {};
     }
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
-// File Upload Functions
+// =============================================================================
+// FILE UPLOAD FUNCTIONS - FIXED
+// =============================================================================
+
 export const uploadProfilePicture = async (file) => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to upload profile picture" };
+      throw new Error("Please log in to upload profile picture");
     }
 
     if (!file) {
@@ -340,7 +356,7 @@ export const uploadProfilePicture = async (file) => {
     
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -349,24 +365,20 @@ export const uploadResume = async (file) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to upload resume" };
+      throw new Error("Please log in to upload resume");
     }
 
     if (!file) {
       throw new Error("File is required");
     }
 
-    // Validate file type
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
+    // Validate file type for resume
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!allowedTypes.includes(file.type)) {
-      throw new Error("Only PDF and Word documents are allowed");
+      throw new Error("Only PDF and Word documents are allowed for resumes");
     }
 
-    // Validate file size (10MB limit)
+    // Validate file size (10MB limit for documents)
     if (file.size > 10 * 1024 * 1024) {
       throw new Error("File size must be less than 10MB");
     }
@@ -383,7 +395,7 @@ export const uploadResume = async (file) => {
     
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -392,7 +404,7 @@ export const deleteProfilePicture = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to delete profile picture" };
+      throw new Error("Please log in to delete profile picture");
     }
 
     const response = await api.delete(`${USERS_URL}/profile/picture`, {
@@ -401,7 +413,7 @@ export const deleteProfilePicture = async () => {
     
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -410,7 +422,7 @@ export const deleteResume = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to delete resume" };
+      throw new Error("Please log in to delete resume");
     }
 
     const response = await api.delete(`${USERS_URL}/profile/resume`, {
@@ -419,7 +431,7 @@ export const deleteResume = async () => {
     
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -428,7 +440,7 @@ export const getUserFiles = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to view files" };
+      throw new Error("Please log in to view files");
     }
 
     const response = await api.get(`${USERS_URL}/profile/files`, {
@@ -440,7 +452,7 @@ export const getUserFiles = async () => {
     if (error.response && error.response.status === 304) {
       return error.response.data || {};
     }
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
@@ -449,7 +461,7 @@ export const downloadResume = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
-      throw { response: { status: 401 }, message: "Please log in to download resume" };
+      throw new Error("Please log in to download resume");
     }
 
     const response = await api.get(`${USERS_URL}/profile/resume/download`, {
@@ -479,25 +491,43 @@ export const downloadResume = async () => {
     
     return { success: true, filename };
   } catch (error) {
-    return handleApiError(error);
+    handleApiError(error);
   }
 };
 
-// Default export with all functions
+// =============================================================================
+// ALIAS FUNCTIONS FOR COMPATIBILITY
+// =============================================================================
+
+// Create aliases for AuthContext compatibility
+export const updateProfile = updateCurrentUser; // AuthContext expects this name
+
+// =============================================================================
+// DEFAULT EXPORT WITH ALL FUNCTIONS
+// =============================================================================
+
 const userService = {
+  // Authentication
   login,
   register,
   logout,
   checkAuth,
+  
+  // User Profile
   getUserById,
   updateUser,
   getCurrentUser,
   updateCurrentUser,
+  updateProfile, // Alias for AuthContext
+  
+  // Job Related
   getSavedJobs,
   getAppliedJobs,
   getCurrentUserSavedJobs,
   getCurrentUserAppliedJobs,
   getJobActivitySummary,
+  
+  // File Management
   uploadProfilePicture,
   uploadResume,
   deleteProfilePicture,

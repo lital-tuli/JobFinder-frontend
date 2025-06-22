@@ -1,217 +1,196 @@
-// src/context/AuthContext.jsx - Fixed version without infinite re-renders
-import { createContext, useState, useEffect, useCallback, useRef } from 'react';
-import userService from '../services/userService';
+// context/AuthContext.jsx - Fixed Version
+import { createContext, useState, useEffect, useCallback } from 'react';
+import * as userService from '../services/userService';
 
-// Create auth context
 const AuthContext = createContext();
 
-// Token expiration (4 hours in milliseconds)
-const TOKEN_EXPIRATION_TIME = 4 * 60 * 60 * 1000;
+// Auto-logout configuration
+const TOKEN_EXPIRATION_TIME = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
-// Auth provider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
-  
-  // Use ref for timer to avoid state-based re-renders
-  const logoutTimerRef = useRef(null);
+  const [logoutTimer, setLogoutTimer] = useState(null);
 
-  // Check if token is valid and not expired
-  const isTokenValid = useCallback((token) => {
-    if (!token) return false;
-    
-    try {
-      // Basic JWT decoding to check expiration
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(window.atob(base64));
-      
-      // Check if token is expired
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
-        return false;
-      }
-      
-      return true;
-    } catch (e) {
-      console.error('Error validating token:', e);
-      return false;
-    }
+  // Clear auth error
+  const clearAuthError = useCallback(() => {
+    setAuthError(null);
   }, []);
 
-  // Logout function (define early so it can be used in setupAutoLogout)
-  const logout = useCallback(() => {
-    userService.logout();
-    setIsAuthenticated(false);
-    setUser(null);
-    
-    // Clear auto-logout timer
-    if (logoutTimerRef.current) {
-      clearTimeout(logoutTimerRef.current);
-      logoutTimerRef.current = null;
-    }
-  }, []);
-
-  // Set up auto-logout timer
+  // Setup auto-logout timer
   const setupAutoLogout = useCallback(() => {
-    // Clear any existing timer
-    if (logoutTimerRef.current) {
-      clearTimeout(logoutTimerRef.current);
+    // Clear existing timer
+    if (logoutTimer) {
+      clearTimeout(logoutTimer);
     }
-    
-    // Set new timer
-    logoutTimerRef.current = setTimeout(() => {
-      logout();
-    }, TOKEN_EXPIRATION_TIME);
-  }, [logout]);
 
-  // Reset the auto-logout timer on user activity
+    // Set new timer
+    const timer = setTimeout(async () => {
+      console.log('Auto-logout triggered after 4 hours of inactivity');
+      await logout();
+    }, TOKEN_EXPIRATION_TIME);
+
+    setLogoutTimer(timer);
+  }, [logoutTimer, logout]);
+
+  // Reset logout timer (call this on user activity)
   const resetLogoutTimer = useCallback(() => {
     if (isAuthenticated) {
       setupAutoLogout();
     }
   }, [isAuthenticated, setupAutoLogout]);
 
-  // Add event listeners for user activity (only once)
-  useEffect(() => {
-    const activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart'];
-    
-    const handleUserActivity = () => {
-      if (isAuthenticated) {
-        setupAutoLogout();
-      }
-    };
-    
-    // Add event listeners
-    activityEvents.forEach(event => {
-      window.addEventListener(event, handleUserActivity, { passive: true });
-    });
-    
-    // Clean up on unmount
-    return () => {
-      if (logoutTimerRef.current) {
-        clearTimeout(logoutTimerRef.current);
+  // Logout function
+  const logout = useCallback(async () => {
+    try {
+      await userService.logout();
+    } catch (error) {
+      console.warn('Logout service error:', error.message);
+      // Continue with logout even if service fails
+    } finally {
+      // Clear timer
+      if (logoutTimer) {
+        clearTimeout(logoutTimer);
+        setLogoutTimer(null);
       }
       
-      activityEvents.forEach(event => {
-        window.removeEventListener(event, handleUserActivity);
-      });
-    };
-  }, []); // Empty dependency array - only run once
-
-  // Separate effect to handle authentication status changes
-  useEffect(() => {
-    if (isAuthenticated) {
-      setupAutoLogout();
-    } else {
-      // Clear timer when user logs out
-      if (logoutTimerRef.current) {
-        clearTimeout(logoutTimerRef.current);
-        logoutTimerRef.current = null;
-      }
-    }
-  }, [isAuthenticated, setupAutoLogout]);
-
-  // Check authentication status on mount
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      setLoading(true);
+      // Clear state
+      setIsAuthenticated(false);
+      setUser(null);
       setAuthError(null);
+    }
+  }, [logoutTimer]);
+
+  // Check if user is authenticated
+  const checkAuthStatus = useCallback(async () => {
+    setLoading(true);
+    
+    try {
+      const data = await userService.checkAuth();
       
-      try {
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        
-        // If token exists but is invalid, clear it
-        if (token && !isTokenValid(token)) {
-          localStorage.removeItem("token");
-          sessionStorage.removeItem("token");
-          setIsAuthenticated(false);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-        
-        // If no token, user is not authenticated
-        if (!token) {
-          setIsAuthenticated(false);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-        
-        // Check authentication with the server
-        const { isAuthenticated: authStatus, user: userData } = await userService.checkAuth();
-        setIsAuthenticated(authStatus);
-        setUser(userData);
-        
-        // Auto-logout will be set up by the useEffect above when isAuthenticated changes
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        setAuthError("Authentication failed. Please try again.");
-        
-        // Clear invalid tokens
-        localStorage.removeItem("token");
-        sessionStorage.removeItem("token");
+      if (data.isAuthenticated && data.user) {
+        setIsAuthenticated(true);
+        setUser(data.user);
+        setupAutoLogout(); // Start auto-logout timer
+      } else {
         setIsAuthenticated(false);
         setUser(null);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.warn('Auth check failed:', error.message);
+      setIsAuthenticated(false);
+      setUser(null);
+      
+      // Clear invalid tokens
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+    } finally {
+      setLoading(false);
+    }
+  }, [setupAutoLogout]);
 
-    checkAuthStatus();
-  }, [isTokenValid]); // Only depend on isTokenValid
-
-  // Login function with enhanced error handling
+  // Login function - FIXED to properly handle errors
   const login = useCallback(async (email, password, rememberMe = false) => {
     setAuthError(null);
     
     try {
-      const data = await userService.login(email, password, rememberMe);
+      // userService.login now throws on error, so we catch it here
+      const data = await userService.login({ email, password, rememberMe });
+      
+      // Verify we got the expected data
+      if (!data.token || !data.user) {
+        throw new Error('Invalid response from server');
+      }
+      
+      // Set authenticated state
       setIsAuthenticated(true);
       setUser(data.user);
+      setupAutoLogout(); // Start auto-logout timer
       
-      // Auto-logout will be set up by the useEffect when isAuthenticated changes
+      console.log('Login successful for user:', data.user.email);
       return data;
+      
     } catch (error) {
-      const errorMessage = error.error || "Login failed. Please check your credentials.";
+      // Error is already a proper Error object from userService
+      const errorMessage = error.message || "Login failed. Please check your credentials.";
       setAuthError(errorMessage);
-      throw { error: errorMessage };
+      
+      // Ensure we're not authenticated on error
+      setIsAuthenticated(false);
+      setUser(null);
+      
+      // Re-throw for component to handle
+      throw error;
     }
-  }, []);
+  }, [setupAutoLogout]);
 
-  // Register function with error handling
+  // Register function - FIXED to properly handle errors
   const register = useCallback(async (userData) => {
     setAuthError(null);
     
     try {
-      return await userService.register(userData);
+      const result = await userService.register(userData);
+      console.log('Registration successful for user:', userData.email);
+      return result;
     } catch (error) {
-      const errorMessage = error.error || "Registration failed. Please try again.";
+      const errorMessage = error.message || "Registration failed. Please try again.";
       setAuthError(errorMessage);
-      throw { error: errorMessage };
+      throw error;
     }
   }, []);
 
-  // Update profile
+  // Update profile function
   const updateProfile = useCallback(async (userData) => {
     setAuthError(null);
     
     try {
       const updatedUser = await userService.updateProfile(userData);
       setUser(updatedUser);
+      resetLogoutTimer(); // Reset timer on activity
       return updatedUser;
     } catch (error) {
-      const errorMessage = error.error || "Profile update failed. Please try again.";
+      const errorMessage = error.message || "Profile update failed. Please try again.";
       setAuthError(errorMessage);
-      throw { error: errorMessage };
+      throw error;
     }
-  }, []);
+  }, [resetLogoutTimer]);
 
-  const clearAuthError = useCallback(() => {
-    setAuthError(null);
-  }, []);
+  // Check authentication status on app load
+  useEffect(() => {
+    checkAuthStatus();
+    
+    // Cleanup timer on unmount
+    return () => {
+      if (logoutTimer) {
+        clearTimeout(logoutTimer);
+      }
+    };
+  }, [checkAuthStatus, logoutTimer]); // Include dependencies
+
+  // Setup activity listeners for auto-logout reset
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    const resetTimer = () => {
+      resetLogoutTimer();
+    };
+
+    // Add event listeners
+    events.forEach(event => {
+      document.addEventListener(event, resetTimer, true);
+    });
+
+    // Cleanup
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, resetTimer, true);
+      });
+    };
+  }, [isAuthenticated, resetLogoutTimer]);
 
   const value = {
     user,
@@ -223,7 +202,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     clearAuthError,
-    resetLogoutTimer
+    resetLogoutTimer,
+    checkAuthStatus // Export for manual refresh if needed
   };
 
   return (

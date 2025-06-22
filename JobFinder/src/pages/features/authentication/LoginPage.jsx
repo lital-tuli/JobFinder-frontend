@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// pages/features/authentication/LoginPage.jsx - Fixed Version
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -9,7 +10,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   
-  const { login, authError, clearAuthError } = useAuth();
+  const { login, authError, clearAuthError, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,6 +25,13 @@ const LoginPage = () => {
     };
   }, [email, password, clearAuthError]);
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
+
   // Basic validation
   const validateForm = () => {
     const errors = {};
@@ -36,15 +44,43 @@ const LoginPage = () => {
     
     if (!password) {
       errors.password = 'Password is required';
+    } else if (password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
     }
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
+  // Clear field errors when user starts typing
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    if (formErrors.email) {
+      setFormErrors(prev => ({ ...prev, email: '' }));
+    }
+    if (authError) {
+      clearAuthError();
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    if (formErrors.password) {
+      setFormErrors(prev => ({ ...prev, password: '' }));
+    }
+    if (authError) {
+      clearAuthError();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Clear any existing errors
+    setFormErrors({});
+    clearAuthError();
+    
+    // Validate form
     if (!validateForm()) {
       return;
     }
@@ -52,11 +88,28 @@ const LoginPage = () => {
     setLoading(true);
     
     try {
-      await login(email, password, rememberMe);
-      navigate(from, { replace: true });
-    } catch {
-      // Authentication errors are handled in the AuthContext
-      // so we don't need to set them here
+      // Attempt login - login function now throws on error
+      const result = await login(email, password, rememberMe);
+      
+      // If we get here, login was successful
+      console.log('Login successful:', result);
+      
+      // The redirect will happen automatically via the useEffect above
+      // when isAuthenticated changes to true
+      
+    } catch (error) {
+      // Login failed - error is already set in AuthContext
+      console.error('Login failed:', error.message || error);
+      
+      // Optionally set specific form errors based on error type
+      if (error.message && error.message.toLowerCase().includes('email')) {
+        setFormErrors({ email: 'Invalid email address' });
+      } else if (error.message && error.message.toLowerCase().includes('password')) {
+        setFormErrors({ password: 'Invalid password' });
+      }
+      // authError will be set by AuthContext, so we don't need to set it here
+      
+    } finally {
       setLoading(false);
     }
   };
@@ -72,19 +125,23 @@ const LoginPage = () => {
                 <p className="text-muted">Sign in to continue to JobFinder</p>
               </div>
               
+              {/* Show auth error from AuthContext */}
               {authError && (
                 <div className="alert alert-danger" role="alert">
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
                   {authError}
                 </div>
               )}
               
+              {/* Show registration success message */}
               {location.state?.registrationSuccess && (
                 <div className="alert alert-success" role="alert">
+                  <i className="bi bi-check-circle-fill me-2"></i>
                   {location.state.message || 'Registration successful! Please log in with your credentials.'}
                 </div>
               )}
               
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} noValidate>
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label">Email address</label>
                   <input
@@ -92,8 +149,10 @@ const LoginPage = () => {
                     className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
                     id="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
+                    disabled={loading}
                     required
+                    autoComplete="email"
                   />
                   {formErrors.email && (
                     <div className="invalid-feedback">
@@ -105,15 +164,23 @@ const LoginPage = () => {
                 <div className="mb-3">
                   <div className="d-flex justify-content-between">
                     <label htmlFor="password" className="form-label">Password</label>
-                    <Link to="/forgot-password" className="small text-decoration-none">Forgot Password?</Link>
+                    <Link 
+                      to="/forgot-password" 
+                      className="small text-decoration-none"
+                      tabIndex={loading ? -1 : 0}
+                    >
+                      Forgot Password?
+                    </Link>
                   </div>
                   <input
                     type="password"
                     className={`form-control ${formErrors.password ? 'is-invalid' : ''}`}
                     id="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
+                    disabled={loading}
                     required
+                    autoComplete="current-password"
                   />
                   {formErrors.password && (
                     <div className="invalid-feedback">
@@ -129,8 +196,11 @@ const LoginPage = () => {
                     id="rememberMe"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={loading}
                   />
-                  <label className="form-check-label" htmlFor="rememberMe">Remember me</label>
+                  <label className="form-check-label" htmlFor="rememberMe">
+                    Remember me
+                  </label>
                 </div>
                 
                 <div className="d-grid">
@@ -153,9 +223,25 @@ const LoginPage = () => {
               
               <div className="text-center mt-4">
                 <p className="mb-0">
-                  Don't have an account? <Link to="/register" className="text-decoration-none">Create Account</Link>
+                  Don't have an account?{' '}
+                  <Link 
+                    to="/register" 
+                    className="text-decoration-none fw-semibold"
+                    tabIndex={loading ? -1 : 0}
+                  >
+                    Sign up here
+                  </Link>
                 </p>
               </div>
+              
+              {/* Development helper - remove in production */}
+              {import.meta.env.DEV && (
+                <div className="mt-4 p-3 bg-light rounded">
+                  <small className="text-muted">
+                    <strong>Dev Mode:</strong> Email format required. Password must be 6+ characters.
+                  </small>
+                </div>
+              )}
             </div>
           </div>
         </div>
