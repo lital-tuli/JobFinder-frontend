@@ -342,6 +342,8 @@ export const uploadResume = async (file) => {
   }
 };
 
+
+
 export default {
   login,
   register,
