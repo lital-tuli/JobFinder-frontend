@@ -1,75 +1,81 @@
-import axios from "axios";
+import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-const ADMIN_URL = `${API_BASE_URL}/admin`;
-
-// Create axios instance with default config
+// Create axios instance with base configuration
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 30000,
   headers: {
-    'Content-Type': 'application/json'
-  },
-  // ✅ FIX: Configure axios to handle 304 responses properly
-  validateStatus: function (status) {
-    // Accept status codes from 200-399 (including 304)
-    return status >= 200 && status < 400;
+    'Content-Type': 'application/json',
   }
 });
 
-// ✅ FIX: Add response interceptor to handle 304 responses globally
-api.interceptors.response.use(
-  (response) => {
-    // Handle 304 responses as success
-    if (response.status === 304) {
-      console.log('304 Not Modified - admin data unchanged');
-      response.data = response.data || [];
+// Add request interceptor for authentication
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      config.headers['x-auth-token'] = token;
     }
-    return response;
+    return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
-    // Don't treat 304 as error
-    if (error.response && error.response.status === 304) {
-      console.log('304 intercepted in admin service - returning success');
-      return Promise.resolve({
-        ...error.response,
-        data: error.response.data || []
-      });
+    if (error.response?.status === 401) {
+      // Clear tokens on authentication error
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
 );
 
-// ✅ FIXED: Helper to handle API errors consistently, including 304
-const handleApiError = (error) => {
-  // ✅ FIX: Handle 304 as success, not error
-  if (error.response && error.response.status === 304) {
-    console.log('Admin data not modified (304), using cached data');
-    return error.response.data || [];
-  }
-  
-  const errorMessage = 
-    error.response?.data?.message || 
-    error.response?.data || 
-    error.message || 
-    'An unexpected error occurred';
-  
-  console.error("Admin API Error:", {
-    message: errorMessage,
-    status: error.response?.status,
-    url: error.config?.url,
-    method: error.config?.method
-  });
-  
-  throw { error: errorMessage, status: error.response?.status };
-};
+const ADMIN_URL = '/admin';
 
-// Helper to add auth token to requests
+// Helper function to get auth headers
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   return token ? { "x-auth-token": token } : {};
 };
 
-// ✅ FIXED: Get all users (admin only) with 304 handling
+// Helper function to handle API errors
+const handleApiError = (error) => {
+  if (error.response) {
+    // Server responded with error status
+    const message = error.response.data?.message || 
+                   error.response.data?.error || 
+                   `Server error (${error.response.status})`;
+    console.error('Admin API Error:', {
+      status: error.response.status,
+      message,
+      url: error.config?.url,
+      method: error.config?.method
+    });
+    throw new Error(message);
+  } else if (error.request) {
+    // Network error
+    console.error('Network Error:', error.message);
+    throw new Error('Network error. Please check your connection.');
+  } else {
+    // Other error
+    console.error('Error:', error.message);
+    throw new Error(error.message || 'An unexpected error occurred');
+  }
+};
+
+// =============================================================================
+// USER MANAGEMENT FUNCTIONS
+// =============================================================================
+
 export const getAllUsers = async () => {
   try {
     const response = await api.get(`${ADMIN_URL}/users`, {
@@ -77,49 +83,28 @@ export const getAllUsers = async () => {
     });
     return response.data;
   } catch (error) {
-    // ✅ FIX: Handle 304 for users list
     if (error.response && error.response.status === 304) {
       return error.response.data || [];
     }
-    return handleApiError(error);
+    handleApiError(error); 
   }
 };
 
-// ✅ FIXED: Get all jobs for admin (including inactive) with 304 handling
-export const getAllJobs = async () => {
-  try {
-    const response = await api.get(`${ADMIN_URL}/jobs`, {
-      headers: getAuthHeaders()
-    });
-    return response.data;
-  } catch (error) {
-    // ✅ FIX: Handle 304 for admin jobs list
-    if (error.response && error.response.status === 304) {
-      return error.response.data || [];
-    }
-    return handleApiError(error);
-  }
-};
-
-// ✅ FIXED: Get system statistics with 304 handling
-export const getSystemStats = async () => {
-  try {
-    const response = await api.get(`${ADMIN_URL}/stats`, {
-      headers: getAuthHeaders()
-    });
-    return response.data;
-  } catch (error) {
-    // ✅ FIX: Handle 304 for system stats
-    if (error.response && error.response.status === 304) {
-      return error.response.data || {};
-    }
-    return handleApiError(error);
-  }
-};
-
-// Update user role
 export const updateUserRole = async (userId, newRole) => {
   try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    if (!newRole) {
+      throw new Error('New role is required');
+    }
+
+    const validRoles = ['jobseeker', 'recruiter', 'admin'];
+    if (!validRoles.includes(newRole)) {
+      throw new Error(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
+    }
+
     const response = await api.put(`${ADMIN_URL}/users/${userId}/role`, 
       { role: newRole },
       {
@@ -128,13 +113,18 @@ export const updateUserRole = async (userId, newRole) => {
     );
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    console.error('updateUserRole error:', error);
+    handleApiError(error); 
   }
 };
 
-// Toggle user status (active/inactive)
+
 export const toggleUserStatus = async (userId) => {
   try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
     const response = await api.put(`${ADMIN_URL}/users/${userId}/status`, 
       {},
       {
@@ -143,36 +133,156 @@ export const toggleUserStatus = async (userId) => {
     );
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    console.error('toggleUserStatus error:', error);
+    handleApiError(error); 
   }
 };
 
-// Delete user
 export const deleteUser = async (userId) => {
   try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
     const response = await api.delete(`${ADMIN_URL}/users/${userId}`, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    console.error('deleteUser error:', error);
+    handleApiError(error); 
   }
 };
 
-// Bulk delete users
 export const bulkDeleteUsers = async (userIds) => {
   try {
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      throw new Error('User IDs array is required');
+    }
+
     const response = await api.delete(`${ADMIN_URL}/users/bulk`, {
       data: { userIds },
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    return handleApiError(error);
+    console.error('bulkDeleteUsers error:', error);
+    handleApiError(error); 
   }
 };
 
-// Job management functions
+// =============================================================================
+// JOB MANAGEMENT FUNCTIONS
+// =============================================================================
+
+export const getAllJobs = async () => {
+  try {
+    const response = await api.get(`${ADMIN_URL}/jobs`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.status === 304) {
+      return error.response.data || [];
+    }
+    handleApiError(error); 
+  }
+};
+
+export const updateJobForAdmin = async (jobId, jobData) => {
+  try {
+    if (!jobId) {
+      throw new Error('Job ID is required');
+    }
+
+    if (!jobData) {
+      throw new Error('Job data is required');
+    }
+
+    const response = await api.put(`${ADMIN_URL}/jobs/${jobId}`, jobData, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('updateJobForAdmin error:', error);
+    handleApiError(error); 
+  }
+};
+
+export const toggleJobStatus = async (jobId) => {
+  try {
+    if (!jobId) {
+      throw new Error('Job ID is required');
+    }
+
+    const response = await api.put(`${ADMIN_URL}/jobs/${jobId}/status`, 
+      {},
+      {
+        headers: getAuthHeaders()
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('toggleJobStatus error:', error);
+    handleApiError(error); 
+  }
+};
+
+export const deleteJob = async (jobId) => {
+  try {
+    if (!jobId) {
+      throw new Error('Job ID is required');
+    }
+
+    const response = await api.delete(`${ADMIN_URL}/jobs/${jobId}`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('deleteJob error:', error);
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
+  }
+};
+
+// ✅ FIXED: Bulk delete jobs
+export const bulkDeleteJobs = async (jobIds) => {
+  try {
+    if (!jobIds || !Array.isArray(jobIds) || jobIds.length === 0) {
+      throw new Error('Job IDs array is required');
+    }
+
+    const response = await api.delete(`${ADMIN_URL}/jobs/bulk`, {
+      data: { jobIds },
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('bulkDeleteJobs error:', error);
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
+  }
+};
+
+// ✅ FIXED: Get job applications for a specific job with 304 handling
+export const getJobApplications = async (jobId) => {
+  try {
+    if (!jobId) {
+      throw new Error('Job ID is required');
+    }
+
+    const response = await api.get(`${ADMIN_URL}/jobs/${jobId}/applications`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('getJobApplications error:', error);
+    
+    // ✅ FIX: Handle 304 for job applications
+    if (error.response && error.response.status === 304) {
+      return error.response.data || { applications: [], totalApplications: 0 };
+    }
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
+  }
+};
 
 // ✅ FIXED: Get job statistics with 304 handling
 export const getJobStatistics = async () => {
@@ -182,86 +292,39 @@ export const getJobStatistics = async () => {
     });
     return response.data;
   } catch (error) {
+    console.error('getJobStatistics error:', error);
+    
     // ✅ FIX: Handle 304 for job statistics
     if (error.response && error.response.status === 304) {
       return error.response.data || {};
     }
-    return handleApiError(error);
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
   }
 };
 
-// Update job (admin only)
-export const updateJob = async (jobId, jobData) => {
-  try {
-    const response = await api.put(`${ADMIN_URL}/jobs/${jobId}`, 
-      jobData,
-      {
-        headers: getAuthHeaders()
-      }
-    );
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+// =============================================================================
+// SYSTEM MANAGEMENT FUNCTIONS
+// =============================================================================
 
-// Toggle job status (active/inactive)
-export const toggleJobStatus = async (jobId) => {
+// ✅ FIXED: Get system statistics with 304 handling
+export const getSystemStats = async () => {
   try {
-    const response = await api.put(`${ADMIN_URL}/jobs/${jobId}/status`, 
-      {},
-      {
-        headers: getAuthHeaders()
-      }
-    );
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// Delete job (admin only)
-export const deleteJob = async (jobId) => {
-  try {
-    const response = await api.delete(`${ADMIN_URL}/jobs/${jobId}`, {
+    const response = await api.get(`${ADMIN_URL}/stats`, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// Bulk delete jobs
-export const bulkDeleteJobs = async (jobIds) => {
-  try {
-    const response = await api.delete(`${ADMIN_URL}/jobs/bulk`, {
-      data: { jobIds },
-      headers: getAuthHeaders()
-    });
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// ✅ FIXED: Get job applications for a specific job with 304 handling
-export const getJobApplications = async (jobId) => {
-  try {
-    const response = await api.get(`${ADMIN_URL}/jobs/${jobId}/applications`, {
-      headers: getAuthHeaders()
-    });
-    return response.data;
-  } catch (error) {
-    // ✅ FIX: Handle 304 for job applications
+    console.error('getSystemStats error:', error);
+    
+    // ✅ FIX: Handle 304 for system stats
     if (error.response && error.response.status === 304) {
-      return error.response.data || { applications: [], totalApplications: 0 };
+      return error.response.data || {};
     }
-    return handleApiError(error);
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
   }
 };
 
-// Get dashboard overview data
+// ✅ FIXED: Get dashboard overview data with 304 handling
 export const getDashboardOverview = async () => {
   try {
     const response = await api.get(`${ADMIN_URL}/dashboard`, {
@@ -269,198 +332,182 @@ export const getDashboardOverview = async () => {
     });
     return response.data;
   } catch (error) {
+    console.error('getDashboardOverview error:', error);
+    
     // ✅ FIX: Handle 304 for dashboard data
     if (error.response && error.response.status === 304) {
       return error.response.data || {};
     }
-    return handleApiError(error);
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
   }
 };
 
-// Get user activity logs
-export const getUserActivityLogs = async (limit = 50) => {
+// ✅ FIXED: Get user activity logs
+export const getUserActivityLogs = async (filters = {}) => {
   try {
     const response = await api.get(`${ADMIN_URL}/logs/user-activity`, {
-      params: { limit },
+      params: filters,
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
+    console.error('getUserActivityLogs error:', error);
+    
     // ✅ FIX: Handle 304 for activity logs
     if (error.response && error.response.status === 304) {
       return error.response.data || [];
     }
-    return handleApiError(error);
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
   }
 };
 
-// Get system health information
-export const getSystemHealth = async () => {
+// ✅ FIXED: Get system logs
+export const getSystemLogs = async (filters = {}) => {
   try {
-    const response = await api.get(`${ADMIN_URL}/health`, {
+    const response = await api.get(`${ADMIN_URL}/logs/system`, {
+      params: filters,
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    // ✅ FIX: Handle 304 for system health
+    console.error('getSystemLogs error:', error);
+    
+    // ✅ FIX: Handle 304 for system logs
     if (error.response && error.response.status === 304) {
-      return error.response.data || {};
+      return error.response.data || [];
     }
-    return handleApiError(error);
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
   }
 };
 
-// Backup system data
+// =============================================================================
+// ANALYTICS FUNCTIONS
+// =============================================================================
+
+// ✅ FIXED: Get user analytics
+export const getUserAnalytics = async (timeframe = '30d') => {
+  try {
+    const response = await api.get(`${ADMIN_URL}/analytics/users`, {
+      params: { timeframe },
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('getUserAnalytics error:', error);
+    
+    // ✅ FIX: Handle 304 for user analytics
+    if (error.response && error.response.status === 304) {
+      return error.response.data || {};
+    }
+    handleApiError(error); // ✅ FIXED: Removed unnecessary return
+  }
+};
+
+// ✅ FIXED: Get job analytics
+export const getJobAnalytics = async (timeframe = '30d') => {
+  try {
+    const response = await api.get(`${ADMIN_URL}/analytics/jobs`, {
+      params: { timeframe },
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('getJobAnalytics error:', error);
+    
+    if (error.response && error.response.status === 304) {
+      return error.response.data || {};
+    }
+    handleApiError(error); 
+  }
+};
+
+export const getApplicationAnalytics = async (timeframe = '30d') => {
+  try {
+    const response = await api.get(`${ADMIN_URL}/analytics/applications`, {
+      params: { timeframe },
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('getApplicationAnalytics error:', error);
+    
+    if (error.response && error.response.status === 304) {
+      return error.response.data || {};
+    }
+    handleApiError(error); 
+  }
+};
+
+// =============================================================================
+// CONFIGURATION FUNCTIONS
+// =============================================================================
+
+export const getSystemConfig = async () => {
+  try {
+    const response = await api.get(`${ADMIN_URL}/config`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('getSystemConfig error:', error);
+    
+    if (error.response && error.response.status === 304) {
+      return error.response.data || {};
+    }
+    handleApiError(error); 
+  }
+};
+
+export const updateSystemConfig = async (configData) => {
+  try {
+    if (!configData) {
+      throw new Error('Configuration data is required');
+    }
+
+    const response = await api.put(`${ADMIN_URL}/config`, configData, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('updateSystemConfig error:', error);
+    handleApiError(error); 
+  }
+};
+
 export const backupSystemData = async () => {
   try {
     const response = await api.post(`${ADMIN_URL}/backup`, {}, {
       headers: getAuthHeaders(),
-      responseType: 'blob'
+      responseType: 'blob' // For file download
     });
-    
-    // Extract filename from response headers or use default
-    let filename = `jobfinder_backup_${new Date().toISOString().split('T')[0]}.json`;
-    const contentDisposition = response.headers['content-disposition'];
-    if (contentDisposition) {
-      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
-      if (matches && matches[1]) {
-        filename = matches[1].replace(/['"]/g, '');
-      }
-    }
-    
-    // Create download
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-    
-    return { success: true, filename };
+    return response.data;
   } catch (error) {
-    return handleApiError(error);
+    console.error('backupSystemData error:', error);
+    handleApiError(error); 
   }
 };
 
-// Send system notification to all users
 export const sendSystemNotification = async (notificationData) => {
   try {
-    const response = await api.post(`${ADMIN_URL}/notifications/system`, 
-      notificationData,
-      {
-        headers: getAuthHeaders()
-      }
-    );
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
+    if (!notificationData) {
+      throw new Error('Notification data is required');
+    }
 
-// Get platform analytics
-export const getPlatformAnalytics = async (dateRange = '30days') => {
-  try {
-    const response = await api.get(`${ADMIN_URL}/analytics`, {
-      params: { range: dateRange },
+    if (!notificationData.message) {
+      throw new Error('Notification message is required');
+    }
+
+    const response = await api.post(`${ADMIN_URL}/notifications`, notificationData, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    // ✅ FIX: Handle 304 for analytics data
-    if (error.response && error.response.status === 304) {
-      return error.response.data || {};
-    }
-    return handleApiError(error);
+    console.error('sendSystemNotification error:', error);
+    handleApiError(error); 
   }
 };
 
-// Manage featured jobs
-export const setFeaturedJob = async (jobId, featured = true) => {
-  try {
-    const response = await api.put(`${ADMIN_URL}/jobs/${jobId}/featured`, 
-      { featured },
-      {
-        headers: getAuthHeaders()
-      }
-    );
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// Get content moderation queue
-export const getModerationQueue = async () => {
-  try {
-    const response = await api.get(`${ADMIN_URL}/moderation/queue`, {
-      headers: getAuthHeaders()
-    });
-    return response.data;
-  } catch (error) {
-    // ✅ FIX: Handle 304 for moderation queue
-    if (error.response && error.response.status === 304) {
-      return error.response.data || [];
-    }
-    return handleApiError(error);
-  }
-};
-
-// Approve/reject content
-export const moderateContent = async (contentId, action, reason = '') => {
-  try {
-    const response = await api.put(`${ADMIN_URL}/moderation/${contentId}`, 
-      { action, reason },
-      {
-        headers: getAuthHeaders()
-      }
-    );
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// Export data for compliance
-export const exportUserData = async (userId, dataTypes = ['profile', 'jobs', 'applications']) => {
-  try {
-    const response = await api.post(`${ADMIN_URL}/export/user-data`, 
-      { userId, dataTypes },
-      {
-        headers: getAuthHeaders(),
-        responseType: 'blob'
-      }
-    );
-    
-    // Extract filename from response headers or use default
-    let filename = `user_data_export_${userId}.json`;
-    const contentDisposition = response.headers['content-disposition'];
-    if (contentDisposition) {
-      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
-      if (matches && matches[1]) {
-        filename = matches[1].replace(/['"]/g, '');
-      }
-    }
-    
-    // Create download
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-    
-    return { success: true, filename };
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// Default export with all functions
-const adminService = {
+export default {
   // User Management
   getAllUsers,
   updateUserRole,
@@ -470,33 +517,27 @@ const adminService = {
   
   // Job Management
   getAllJobs,
-  getJobStatistics,
-  updateJob,
+  updateJobForAdmin,
   toggleJobStatus,
   deleteJob,
   bulkDeleteJobs,
   getJobApplications,
-  setFeaturedJob,
+  getJobStatistics,
   
   // System Management
   getSystemStats,
   getDashboardOverview,
   getUserActivityLogs,
-  getSystemHealth,
-  backupSystemData,
-  
-  // Communication
-  sendSystemNotification,
+  getSystemLogs,
   
   // Analytics
-  getPlatformAnalytics,
+  getUserAnalytics,
+  getJobAnalytics,
+  getApplicationAnalytics,
   
-  // Content Moderation
-  getModerationQueue,
-  moderateContent,
-  
-  // Compliance
-  exportUserData
+  // Configuration
+  getSystemConfig,
+  updateSystemConfig,
+  backupSystemData,
+  sendSystemNotification
 };
-
-export default adminService;

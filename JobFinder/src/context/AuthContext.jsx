@@ -1,10 +1,8 @@
-// context/AuthContext.jsx - Fixed Version
 import { createContext, useState, useEffect, useCallback } from 'react';
 import * as userService from '../services/userService';
 
 const AuthContext = createContext();
 
-// Auto-logout configuration
 const TOKEN_EXPIRATION_TIME = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
 export const AuthProvider = ({ children }) => {
@@ -19,30 +17,6 @@ export const AuthProvider = ({ children }) => {
     setAuthError(null);
   }, []);
 
-  // Setup auto-logout timer
-  const setupAutoLogout = useCallback(() => {
-    // Clear existing timer
-    if (logoutTimer) {
-      clearTimeout(logoutTimer);
-    }
-
-    // Set new timer
-    const timer = setTimeout(async () => {
-      console.log('Auto-logout triggered after 4 hours of inactivity');
-      await logout();
-    }, TOKEN_EXPIRATION_TIME);
-
-    setLogoutTimer(timer);
-  }, [logoutTimer, logout]);
-
-  // Reset logout timer (call this on user activity)
-  const resetLogoutTimer = useCallback(() => {
-    if (isAuthenticated) {
-      setupAutoLogout();
-    }
-  }, [isAuthenticated, setupAutoLogout]);
-
-  // Logout function
   const logout = useCallback(async () => {
     try {
       await userService.logout();
@@ -60,8 +34,32 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setUser(null);
       setAuthError(null);
+      
+      console.log('User logged out successfully');
     }
   }, [logoutTimer]);
+
+  const setupAutoLogout = useCallback(() => {
+    // Clear existing timer
+    if (logoutTimer) {
+      clearTimeout(logoutTimer);
+    }
+
+    // Set new timer
+    const timer = setTimeout(async () => {
+      console.log('Auto-logout triggered after 4 hours of inactivity');
+      await logout();
+    }, TOKEN_EXPIRATION_TIME);
+
+    setLogoutTimer(timer);
+  }, [logout]); // Fixed: only depend on logout, not logoutTimer
+
+  // Reset logout timer (call this on user activity)
+  const resetLogoutTimer = useCallback(() => {
+    if (isAuthenticated) {
+      setupAutoLogout();
+    }
+  }, [isAuthenticated, setupAutoLogout]);
 
   // Check if user is authenticated
   const checkAuthStatus = useCallback(async () => {
@@ -74,9 +72,11 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         setUser(data.user);
         setupAutoLogout(); // Start auto-logout timer
+        console.log('Auth check successful for user:', data.user.email);
       } else {
         setIsAuthenticated(false);
         setUser(null);
+        console.log('Auth check failed - user not authenticated');
       }
     } catch (error) {
       console.warn('Auth check failed:', error.message);
@@ -91,20 +91,34 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setupAutoLogout]);
 
-  // Login function - FIXED to properly handle errors
   const login = useCallback(async (email, password, rememberMe = false) => {
     setAuthError(null);
     
     try {
+      console.log('Attempting login for user:', email);
+      
       // userService.login now throws on error, so we catch it here
       const data = await userService.login({ email, password, rememberMe });
       
-      // Verify we got the expected data
-      if (!data.token || !data.user) {
-        throw new Error('Invalid response from server');
+      if (!data || !data.token || !data.user || !data.user._id) {
+        console.error('Login response validation failed:', {
+          hasData: !!data,
+          hasToken: !!(data?.token),
+          hasUser: !!(data?.user),
+          hasUserId: !!(data?.user?._id)
+        });
+        throw new Error('Invalid response from server - incomplete login data');
       }
       
-      // Set authenticated state
+      if (!data.user.email || !data.user.role) {
+        console.error('User data validation failed:', {
+          hasEmail: !!data.user.email,
+          hasRole: !!data.user.role,
+          userId: data.user._id
+        });
+        throw new Error('Invalid user data received from server');
+      }
+      
       setIsAuthenticated(true);
       setUser(data.user);
       setupAutoLogout(); // Start auto-logout timer
@@ -113,11 +127,11 @@ export const AuthProvider = ({ children }) => {
       return data;
       
     } catch (error) {
-      // Error is already a proper Error object from userService
+      console.error('Login error in AuthContext:', error);
+      
       const errorMessage = error.message || "Login failed. Please check your credentials.";
       setAuthError(errorMessage);
       
-      // Ensure we're not authenticated on error
       setIsAuthenticated(false);
       setUser(null);
       
@@ -126,7 +140,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setupAutoLogout]);
 
-  // Register function - FIXED to properly handle errors
   const register = useCallback(async (userData) => {
     setAuthError(null);
     
@@ -167,9 +180,8 @@ export const AuthProvider = ({ children }) => {
         clearTimeout(logoutTimer);
       }
     };
-  }, [checkAuthStatus, logoutTimer]); // Include dependencies
+  }, []); 
 
-  // Setup activity listeners for auto-logout reset
   useEffect(() => {
     if (!isAuthenticated) return;
 

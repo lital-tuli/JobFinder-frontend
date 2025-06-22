@@ -1,4 +1,3 @@
-// pages/features/authentication/LoginPage.jsx - Fixed Version
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
@@ -25,14 +24,15 @@ const LoginPage = () => {
     };
   }, [email, password, clearAuthError]);
 
-  // Redirect if already authenticated
+  // ✅ FIXED: Only redirect if actually authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('User is authenticated, redirecting to:', from);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
 
-  // Basic validation
+  // Enhanced form validation
   const validateForm = () => {
     const errors = {};
     
@@ -73,6 +73,7 @@ const LoginPage = () => {
     }
   };
 
+  // ✅ FIXED: Proper login handling - no fake success
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -88,160 +89,173 @@ const LoginPage = () => {
     setLoading(true);
     
     try {
-      // Attempt login - login function now throws on error
+      // ✅ FIXED: Attempt login - login function throws on error
+      console.log('Attempting login for:', email);
       const result = await login(email, password, rememberMe);
       
-      // If we get here, login was successful
+      // ✅ FIXED: Only log success if we actually get here (login didn't throw)
       console.log('Login successful:', result);
       
       // The redirect will happen automatically via the useEffect above
-      // when isAuthenticated changes to true
+      // when isAuthenticated changes to true - we don't manually redirect here
       
     } catch (error) {
-      // Login failed - error is already set in AuthContext
+      // ✅ FIXED: Login failed - error is already set in AuthContext
       console.error('Login failed:', error.message || error);
       
       // Optionally set specific form errors based on error type
       if (error.message && error.message.toLowerCase().includes('email')) {
-        setFormErrors({ email: 'Invalid email address' });
+        setFormErrors(prev => ({ ...prev, email: 'Invalid email address' }));
       } else if (error.message && error.message.toLowerCase().includes('password')) {
-        setFormErrors({ password: 'Invalid password' });
+        setFormErrors(prev => ({ ...prev, password: 'Invalid password' }));
       }
-      // authError will be set by AuthContext, so we don't need to set it here
       
+      // The authError is already set by the AuthContext, so it will display
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container py-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6 col-lg-5">
-          <div className="card shadow-sm border-0">
-            <div className="card-body p-4">
-              <div className="text-center mb-4">
-                <h2 className="fw-bold">Welcome Back</h2>
-                <p className="text-muted">Sign in to continue to JobFinder</p>
+    <div className="min-vh-100 d-flex align-items-center bg-light">
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-md-6 col-lg-5">
+            <div className="card shadow-lg border-0">
+              <div className="card-header bg-primary text-white text-center py-4">
+                <h2 className="mb-0 fw-bold">Welcome Back</h2>
+                <p className="mb-0 opacity-75">Sign in to your account</p>
               </div>
               
-              {/* Show auth error from AuthContext */}
-              {authError && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                  {authError}
-                </div>
-              )}
-              
-              {/* Show registration success message */}
-              {location.state?.registrationSuccess && (
-                <div className="alert alert-success" role="alert">
-                  <i className="bi bi-check-circle-fill me-2"></i>
-                  {location.state.message || 'Registration successful! Please log in with your credentials.'}
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit} noValidate>
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label">Email address</label>
-                  <input
-                    type="email"
-                    className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
-                    id="email"
-                    value={email}
-                    onChange={handleEmailChange}
-                    disabled={loading}
-                    required
-                    autoComplete="email"
-                  />
-                  {formErrors.email && (
-                    <div className="invalid-feedback">
-                      {formErrors.email}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between">
-                    <label htmlFor="password" className="form-label">Password</label>
-                    <Link 
-                      to="/forgot-password" 
-                      className="small text-decoration-none"
-                      tabIndex={loading ? -1 : 0}
-                    >
-                      Forgot Password?
-                    </Link>
+              <div className="card-body p-5">
+                {/* ✅ FIXED: Show auth error prominently */}
+                {authError && (
+                  <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>{authError}</div>
                   </div>
-                  <input
-                    type="password"
-                    className={`form-control ${formErrors.password ? 'is-invalid' : ''}`}
-                    id="password"
-                    value={password}
-                    onChange={handlePasswordChange}
-                    disabled={loading}
-                    required
-                    autoComplete="current-password"
-                  />
-                  {formErrors.password && (
-                    <div className="invalid-feedback">
-                      {formErrors.password}
+                )}
+
+                <form onSubmit={handleSubmit} noValidate>
+                  <div className="mb-4">
+                    <label htmlFor="email" className="form-label fw-semibold">
+                      Email Address *
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light">
+                        <i className="bi bi-envelope"></i>
+                      </span>
+                      <input
+                        type="email"
+                        id="email"
+                        className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
+                        value={email}
+                        onChange={handleEmailChange}
+                        placeholder="Enter your email"
+                        required
+                        disabled={loading}
+                        autoComplete="email"
+                      />
                     </div>
-                  )}
-                </div>
-                
-                <div className="mb-4 form-check">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    id="rememberMe"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={loading}
-                  />
-                  <label className="form-check-label" htmlFor="rememberMe">
-                    Remember me
-                  </label>
-                </div>
-                
-                <div className="d-grid">
+                    {formErrors.email && (
+                      <div className="invalid-feedback d-block">
+                        <i className="bi bi-exclamation-circle me-1"></i>
+                        {formErrors.email}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <label htmlFor="password" className="form-label fw-semibold">
+                      Password *
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light">
+                        <i className="bi bi-lock"></i>
+                      </span>
+                      <input
+                        type="password"
+                        id="password"
+                        className={`form-control ${formErrors.password ? 'is-invalid' : ''}`}
+                        value={password}
+                        onChange={handlePasswordChange}
+                        placeholder="Enter your password"
+                        required
+                        disabled={loading}
+                        autoComplete="current-password"
+                      />
+                    </div>
+                    {formErrors.password && (
+                      <div className="invalid-feedback d-block">
+                        <i className="bi bi-exclamation-circle me-1"></i>
+                        {formErrors.password}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="row">
+                      <div className="col">
+                        <div className="form-check">
+                          <input
+                            type="checkbox"
+                            id="rememberMe"
+                            className="form-check-input"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            disabled={loading}
+                          />
+                          <label htmlFor="rememberMe" className="form-check-label">
+                            Remember me
+                          </label>
+                        </div>
+                      </div>
+                      <div className="col text-end">
+                        <Link 
+                          to="/forgot-password" 
+                          className="text-decoration-none small"
+                          tabIndex={loading ? -1 : 0}
+                        >
+                          Forgot password?
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
-                    className="btn btn-primary py-2"
-                    disabled={loading}
+                    className="btn btn-primary w-100 py-3 fw-semibold"
+                    disabled={loading || !email || !password}
                   >
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Signing in...
+                        Signing In...
                       </>
                     ) : (
-                      'Sign In'
+                      <>
+                        <i className="bi bi-box-arrow-in-right me-2"></i>
+                        Sign In
+                      </>
                     )}
                   </button>
+                </form>
+
+                <hr className="my-4" />
+
+                <div className="text-center">
+                  <p className="mb-0">
+                    Don't have an account?{' '}
+                    <Link 
+                      to="/register" 
+                      className="text-primary text-decoration-none fw-semibold"
+                      tabIndex={loading ? -1 : 0}
+                    >
+                      Sign up here
+                    </Link>
+                  </p>
                 </div>
-              </form>
-              
-              <div className="text-center mt-4">
-                <p className="mb-0">
-                  Don't have an account?{' '}
-                  <Link 
-                    to="/register" 
-                    className="text-decoration-none fw-semibold"
-                    tabIndex={loading ? -1 : 0}
-                  >
-                    Sign up here
-                  </Link>
-                </p>
               </div>
-              
-              {/* Development helper - remove in production */}
-              {import.meta.env.DEV && (
-                <div className="mt-4 p-3 bg-light rounded">
-                  <small className="text-muted">
-                    <strong>Dev Mode:</strong> Email format required. Password must be 6+ characters.
-                  </small>
-                </div>
-              )}
             </div>
           </div>
         </div>
