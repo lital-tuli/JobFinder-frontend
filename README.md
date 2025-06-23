@@ -1,273 +1,184 @@
-# JobFinder - Job Portal Application
+# JobFinder Frontend - React Application
 
-A comprehensive job portal application built with React, Node.js, Express, and MongoDB that connects job seekers with recruiters and employers.
+The frontend client for the JobFinder job portal application, built with React 19, Vite, and Bootstrap.
 
-## 🌟 Features
+## Features
 
-### For Job Seekers
-- **User Registration & Authentication** - Secure signup and login with JWT tokens
-- **Job Search & Filtering** - Advanced search with location, job type, and keyword filters
-- **Job Applications** - Apply to jobs with application tracking
-- **Save Jobs** - Bookmark jobs for later viewing
-- **Profile Management** - Update personal information and bio
-- **Application Dashboard** - Track application status and history
+- User authentication (login/register)
+- User roles (job seekers and recruiters)
+- Job listings with filtering and search
+- Job application system
+- Save jobs for later
+- Post job listings (for recruiters)
+- User profiles with file uploads
+- Responsive design for all devices
 
-### For Recruiters
-- **Job Posting** - Create and publish job listings
-- **Application Management** - View and manage job applications
-- **Job Management** - Edit, update, or remove job postings
-- **Company Branding** - Showcase company information
-
-### For Administrators
-- **User Management** - Manage user accounts and permissions
-- **System Analytics** - View system statistics and insights
-- **Content Moderation** - Manage job postings and user content
-- **Admin Dashboard** - Comprehensive system overview
-
-## 🚀 Technology Stack
+## Tech Stack
 
 ### Frontend
-- **React 19** - Modern React with hooks and context
-- **React Router v7** - Client-side routing
-- **Bootstrap 5** - Responsive UI framework
-- **Axios** - HTTP client for API requests
-- **Formik & Yup** - Form handling and validation
+- React 19
+- React Router v7
+- Bootstrap 5 + React Bootstrap
+- Axios for API calls
+- Formik & Yup for form validation
+- Vite for build tooling
+- Material-UI Icons
 
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web application framework
-- **MongoDB** - NoSQL database
-- **Mongoose** - MongoDB object modeling
-- **JWT** - Authentication tokens
-- **Joi** - Server-side validation
-- **Bcrypt** - Password hashing
-
-## 📁 Project Structure
-
-```
-jobfinder/
-├── JobFinder/                  # Frontend React application
-│   ├── public/                 # Static assets
-│   ├── src/
-│   │   ├── components/         # Reusable React components
-│   │   ├── pages/              # Page components
-│   │   ├── context/            # React context providers
-│   │   ├── hooks/              # Custom React hooks
-│   │   ├── services/           # API service functions
-│   │   └── assets/             # Styles and images
-├── config/                     # Configuration files
-├── jobs/                       # Job-related backend modules
-├── users/                      # User-related backend modules
-├── auth/                       # Authentication middleware
-├── admin/                      # Admin functionality
-├── DB/                         # Database models and connection
-├── utils/                      # Utility functions
-└── server.js                   # Main server file
-```
-
-## 🛠️ Installation & Setup
+## Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- MongoDB (local or MongoDB Atlas)
-- Git
+- Node.js (v18+)
+- npm or yarn
 
-### Backend Setup
+### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd jobfinder
-   ```
+1. Navigate to the frontend directory:
+```bash
+cd JobFinder
+```
 
-2. **Install backend dependencies**
-   ```bash
-   npm install
-   ```
+2. Install dependencies:
+```bash
+npm install
+```
 
-3. **Environment Configuration**
-   Create a `.env` file in the root directory:
-   ```env
-   PORT=8000
-   SECRET=your_jwt_secret_key
-   ATLAS_CONNECTION_STRING=your_mongodb_connection_string
-   NODE_ENV=development
-   ```
-
-4. **Start the backend server**
-   ```bash
-   npm run dev
-   ```
-
-### Frontend Setup
-
-1. **Navigate to frontend directory**
-   ```bash
-   cd JobFinder
-   ```
-
-2. **Install frontend dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Environment Configuration**
-   Create a `.env` file in the JobFinder directory:
+3. Set up environment variables:
+   Create a `.env` file in this directory with:
    ```env
    VITE_API_URL=http://localhost:8000/api
    NODE_ENV=development
    ```
 
-4. **Start the frontend development server**
-   ```bash
-   npm run dev
-   ```
+4. Start the development server:
+```bash
+npm run dev
+```
 
-## 🌐 Application URLs
+5. Access the application:
+   - Frontend will be available at: http://localhost:5173
 
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000/api
-- **Health Check**: http://localhost:8000/health
+## Available Scripts
 
-## 👥 Default User Accounts
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-The application seeds with default accounts for testing:
+## Project Structure
 
-### Admin User
-- **Email**: admin@jobfinder.com
-- **Password**: Admin123
-- **Role**: Administrator
+```
+src/
+├── assets/          # Images, CSS, and static files
+├── components/      # Reusable React components
+│   ├── common/      # Shared components (Header, Footer, etc.)
+│   ├── forms/       # Form components
+│   └── layout/      # Layout components
+├── context/         # React context providers
+│   └── AuthContext.jsx  # Authentication context
+├── hooks/           # Custom React hooks
+├── pages/           # Page components
+│   ├── auth/        # Login, Register pages
+│   ├── jobs/        # Job-related pages
+│   ├── profile/     # User profile pages
+│   └── admin/       # Admin dashboard pages
+├── services/        # API service functions
+│   ├── userService.js   # User API calls
+│   ├── jobService.js    # Job API calls
+│   └── adminService.js  # Admin API calls
+└── main.jsx         # Application entry point
+```
 
-### Recruiter User
-- **Email**: recruiter@example.com
-- **Password**: Recruiter123  
-- **Role**: Recruiter
+## Environment Variables
 
-### Job Seeker User
-- **Email**: jobseeker@example.com
-- **Password**: Seeker123
-- **Role**: Job Seeker
+Required environment variables:
 
-## 🔐 Security Features
+- `VITE_API_URL` - Backend API URL (e.g., http://localhost:8000/api)
+- `NODE_ENV` - Environment (development/production)
 
-- **JWT Authentication** - Secure token-based authentication
-- **Password Hashing** - Bcrypt for secure password storage
-- **Input Validation** - Both client and server-side validation
-- **Rate Limiting** - API request rate limiting (bonus feature)
-- **Auto-logout** - Automatic logout after 4 hours of inactivity (bonus feature)
-- **Role-based Access Control** - Different permissions for different user types
+## API Integration
 
-## 📱 Responsive Design
+The frontend communicates with the backend through RESTful APIs:
 
-The application is fully responsive and optimized for:
+- **Authentication**: Login, register, logout, check auth status
+- **User Management**: Profile CRUD, file uploads, job applications
+- **Job Management**: Job listings, search, filtering, applications
+- **Admin**: User management, system analytics
+
+## Authentication
+
+Uses JWT tokens stored in localStorage with automatic:
+- Token inclusion in API requests
+- Redirect on unauthorized access
+- Auto-logout on token expiration
+
+## Form Validation
+
+All forms use Formik + Yup with:
+- Client-side validation
+- Real-time feedback
+- Password strength requirements:
+  - At least one uppercase letter
+  - At least one lowercase letter
+  - At least 4 numbers
+  - At least one special character from: !@%$#^&*-_*
+  - Minimum 8 characters total
+
+## Responsive Design
+
+Fully responsive design supporting:
+- Mobile phones (320px+)
+- Tablets (768px+)
 - Desktop computers (1200px+)
-- Tablets (768px - 1199px)
-- Mobile phones (below 768px)
 
-## 🔍 API Endpoints
+Uses Bootstrap breakpoints and custom CSS for optimal user experience.
 
-### Authentication
-- `POST /api/users/login` - User login
-- `POST /api/users` - User registration
-- `GET /api/users/check-auth` - Verify authentication
+## Building for Production
 
-### Jobs
-- `GET /api/jobs` - Get all jobs (with filtering)
-- `GET /api/jobs/:id` - Get specific job
-- `POST /api/jobs` - Create new job (recruiters only)
-- `PUT /api/jobs/:id` - Update job (recruiters only)
-- `DELETE /api/jobs/:id` - Delete job (recruiters only)
-- `POST /api/jobs/:id/apply` - Apply for job
-- `POST /api/jobs/:id/save` - Save/unsave job
+1. Build the application:
+```bash
+npm run build
+```
 
-### Users
-- `GET /api/users/:id` - Get user profile
-- `PUT /api/users/:id` - Update user profile
-- `GET /api/users/:id/saved-jobs` - Get saved jobs
-- `GET /api/users/:id/applied-jobs` - Get applied jobs
+2. The `dist` folder will contain the production-ready files
 
-### Admin
-- `GET /api/admin/users` - Get all users
-- `GET /api/admin/jobs` - Get all jobs
-- `GET /api/admin/stats` - Get system statistics
-- `PUT /api/admin/users/:id/role` - Update user role
-- `DELETE /api/admin/users/:id` - Delete user
+3. Deploy to any static hosting service (Netlify, Vercel, etc.)
 
-## 🚀 Deployment
+## Configuration for Production
 
-### Backend Deployment
-1. Set `NODE_ENV=production` in environment variables
-2. Configure production MongoDB database
-3. Update CORS settings for production domain
-4. Deploy to platforms like Heroku, Railway, or DigitalOcean
+Update environment variables for production:
+```env
+VITE_API_URL=https://your-api-domain.com/api
+NODE_ENV=production
+```
 
-### Frontend Deployment
-1. Build the production version:
-   ```bash
-   cd JobFinder
-   npm run build
-   ```
-2. Deploy the `dist` folder to Netlify, Vercel, or similar platforms
-3. Update API URL environment variable for production
+## Browser Support
 
-## 🧪 Testing
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
 
-### Test User Accounts
-Use the default seeded accounts or create new ones through the registration process.
-
-### API Testing
-Use tools like Postman or Thunder Client to test API endpoints:
-1. Register/login to get authentication token
-2. Include token in Authorization header: `x-auth-token: <token>`
-3. Test CRUD operations on jobs and users
-
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-1. **Memory Issues**
-   - Increase Node.js heap size: `node --max-old-space-size=4096 server.js`
+1. **API Connection Errors**
+   - Verify `VITE_API_URL` is correct
+   - Check backend server is running
+   - Verify CORS settings
 
-2. **Database Connection**
-   - Verify MongoDB is running locally or Atlas connection string is correct
-   - Check network connectivity and firewall settings
+2. **Build Errors**
+   - Clear node_modules and reinstall: `rm -rf node_modules package-lock.json && npm install`
+   - Check for ESLint errors: `npm run lint`
 
-3. **CORS Errors**
-   - Ensure frontend URL is included in CORS configuration
-   - Check API URL in frontend environment variables
+3. **Authentication Issues**
+   - Clear localStorage: `localStorage.clear()`
+   - Check token expiration
+   - Verify API endpoints
 
-4. **Authentication Issues**
-   - Verify JWT secret is set in environment variables
-   - Check token expiration and storage
+## Contributing
 
-## 📈 Performance Optimization
-
-- **Database Indexing** - Optimized MongoDB queries with proper indexing
-- **Pagination** - Large data sets are paginated
-- **Image Optimization** - Optimized images and lazy loading
-- **Code Splitting** - React components are split for better loading
-- **Caching** - API responses cached where appropriate
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- Bootstrap team for the excellent UI framework
-- MongoDB team for the robust database solution
-- React team for the powerful frontend library
-- All open-source contributors whose libraries made this project possible
-
-
----
-
-**Built with ❤️ by [Lital Gehman]**
+1. Follow the existing code style
+2. Run linting before commits: `npm run lint`
+3. Test all functionality before submitting PRs
+4. Update documentation for new features
