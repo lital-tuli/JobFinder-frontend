@@ -9,7 +9,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   
-  const { login, authError, clearAuthError, isAuthenticated } = useAuth();
+  const { login, error: authError, clearError, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -17,12 +17,12 @@ const LoginPage = () => {
 
   // Clear auth errors when component unmounts or when form values change
   useEffect(() => {
-    clearAuthError();
+    clearError(); ();
     
     return () => {
-      clearAuthError();
+      clearError(); ();
     };
-  }, [email, password, clearAuthError]);
+  }, [email, password, clearError(); ]);
 
   // ✅ FIXED: Only redirect if actually authenticated
   useEffect(() => {
@@ -59,7 +59,7 @@ const LoginPage = () => {
       setFormErrors(prev => ({ ...prev, email: '' }));
     }
     if (authError) {
-      clearAuthError();
+      clearError(); ();
     }
   };
 
@@ -69,7 +69,7 @@ const LoginPage = () => {
       setFormErrors(prev => ({ ...prev, password: '' }));
     }
     if (authError) {
-      clearAuthError();
+      clearError(); ();
     }
   };
 
@@ -79,7 +79,7 @@ const LoginPage = () => {
     
     // Clear any existing errors
     setFormErrors({});
-    clearAuthError();
+    clearError(); ();
     
     // Validate form
     if (!validateForm()) {
