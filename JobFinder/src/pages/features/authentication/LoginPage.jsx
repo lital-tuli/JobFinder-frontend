@@ -17,12 +17,12 @@ const LoginPage = () => {
 
   // Clear auth errors when component unmounts or when form values change
   useEffect(() => {
-    clearError(); ();
+    clearError();
     
     return () => {
-      clearError(); ();
+      clearError();
     };
-  }, [email, password, clearError(); ]);
+  }, [email, password, clearError]);
 
   // ✅ FIXED: Only redirect if actually authenticated
   useEffect(() => {
@@ -59,7 +59,7 @@ const LoginPage = () => {
       setFormErrors(prev => ({ ...prev, email: '' }));
     }
     if (authError) {
-      clearError(); ();
+      clearError();
     }
   };
 
@@ -69,7 +69,7 @@ const LoginPage = () => {
       setFormErrors(prev => ({ ...prev, password: '' }));
     }
     if (authError) {
-      clearError(); ();
+      clearError();
     }
   };
 
@@ -79,7 +79,7 @@ const LoginPage = () => {
     
     // Clear any existing errors
     setFormErrors({});
-    clearError(); ();
+    clearError();
     
     // Validate form
     if (!validateForm()) {
