@@ -1,25 +1,37 @@
 import { useState, useEffect } from 'react';
 
-/**
- * Custom hook for debouncing values
- * @param {any} value - The value to debounce
- * @param {number} delay - The delay in milliseconds
- * @returns {any} - The debounced value
- */
 export const useDebounce = (value, delay) => {
-    const [debouncedValue, setDebouncedValue] = useState(value);
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
 
-    return debouncedValue;
+  return debouncedValue;
 };
 
-export default useDebounce;
+// Memoized job card component
+import React, { memo } from 'react';
+
+const JobCard = memo(({ job, onApply }) => {
+  return (
+    <div className="job-card">
+      <h3>{job.title}</h3>
+      <p>{job.company}</p>
+      <div className="job-meta">
+        <span>{job.jobType}</span>
+        <span>{job.workLocation}</span>
+        <span>{job.experienceLevel}</span>
+      </div>
+      <button onClick={() => onApply(job._id)}>
+        Apply Now
+      </button>
+    </div>
+  );
+});
