@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -15,14 +15,31 @@ const LoginPage = () => {
 
   const from = location.state?.from || '/';
 
-  // Clear auth errors when component unmounts or when form values change
+  // ✅ FIX: Memoize clearError to prevent infinite loops
+  const memoizedClearError = useCallback(() => {
+    clearError();
+  }, [clearError]);
+
+  // ✅ FIX: Clear auth errors when component mounts - do NOT include clearError in dependencies
   useEffect(() => {
     clearError();
     
     return () => {
       clearError();
     };
-  }, [email, password, clearError]);
+  }, []); // ← Empty dependency array - this is the key fix!
+
+  // Clear errors when form values change
+  useEffect(() => {
+    if (authError) {
+      // Only clear if there's an error and user is typing
+      const timer = setTimeout(() => {
+        clearError();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [email, password]); // ← Don't include clearError here either
 
   // ✅ FIXED: Only redirect if actually authenticated
   useEffect(() => {
@@ -58,9 +75,7 @@ const LoginPage = () => {
     if (formErrors.email) {
       setFormErrors(prev => ({ ...prev, email: '' }));
     }
-    if (authError) {
-      clearError();
-    }
+    // Don't call clearError here to avoid loops
   };
 
   const handlePasswordChange = (e) => {
@@ -68,9 +83,7 @@ const LoginPage = () => {
     if (formErrors.password) {
       setFormErrors(prev => ({ ...prev, password: '' }));
     }
-    if (authError) {
-      clearError();
-    }
+    // Don't call clearError here to avoid loops
   };
 
   // ✅ FIXED: Proper login handling - no fake success
@@ -79,7 +92,7 @@ const LoginPage = () => {
     
     // Clear any existing errors
     setFormErrors({});
-    clearError();
+    memoizedClearError(); // Use memoized version
     
     // Validate form
     if (!validateForm()) {
@@ -89,18 +102,11 @@ const LoginPage = () => {
     setLoading(true);
     
     try {
-      // ✅ FIXED: Attempt login - login function throws on error
       console.log('Attempting login for:', email);
       const result = await login(email, password, rememberMe);
-      
-      // ✅ FIXED: Only log success if we actually get here (login didn't throw)
       console.log('Login successful:', result);
       
-      // The redirect will happen automatically via the useEffect above
-      // when isAuthenticated changes to true - we don't manually redirect here
-      
     } catch (error) {
-      // ✅ FIXED: Login failed - error is already set in AuthContext
       console.error('Login failed:', error.message || error);
       
       // Optionally set specific form errors based on error type
@@ -110,7 +116,6 @@ const LoginPage = () => {
         setFormErrors(prev => ({ ...prev, password: 'Invalid password' }));
       }
       
-      // The authError is already set by the AuthContext, so it will display
     } finally {
       setLoading(false);
     }
@@ -193,50 +198,37 @@ const LoginPage = () => {
                     )}
                   </div>
 
-                  <div className="mb-4">
-                    <div className="row">
-                      <div className="col">
-                        <div className="form-check">
-                          <input
-                            type="checkbox"
-                            id="rememberMe"
-                            className="form-check-input"
-                            checked={rememberMe}
-                            onChange={(e) => setRememberMe(e.target.checked)}
-                            disabled={loading}
-                          />
-                          <label htmlFor="rememberMe" className="form-check-label">
-                            Remember me
-                          </label>
-                        </div>
-                      </div>
-                      <div className="col text-end">
-                        <Link 
-                          to="/forgot-password" 
-                          className="text-decoration-none small"
-                          tabIndex={loading ? -1 : 0}
-                        >
-                          Forgot password?
-                        </Link>
-                      </div>
+                  <div className="mb-4 d-flex justify-content-between align-items-center">
+                    <div className="form-check">
+                      <input
+                        type="checkbox"
+                        id="rememberMe"
+                        className="form-check-input"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        disabled={loading}
+                      />
+                      <label className="form-check-label" htmlFor="rememberMe">
+                        Remember me
+                      </label>
                     </div>
+                    <Link to="/forgot-password" className="text-decoration-none small">
+                      Forgot password?
+                    </Link>
                   </div>
 
                   <button
                     type="submit"
                     className="btn btn-primary w-100 py-3 fw-semibold"
-                    disabled={loading || !email || !password}
+                    disabled={loading}
                   >
                     {loading ? (
                       <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Signing In...
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Signing in...
                       </>
                     ) : (
-                      <>
-                        <i className="bi bi-box-arrow-in-right me-2"></i>
-                        Sign In
-                      </>
+                      'Sign In'
                     )}
                   </button>
                 </form>
@@ -244,13 +236,9 @@ const LoginPage = () => {
                 <hr className="my-4" />
 
                 <div className="text-center">
-                  <p className="mb-0">
+                  <p className="mb-0 text-muted">
                     Don't have an account?{' '}
-                    <Link 
-                      to="/register" 
-                      className="text-primary text-decoration-none fw-semibold"
-                      tabIndex={loading ? -1 : 0}
-                    >
+                    <Link to="/register" className="text-decoration-none fw-semibold">
                       Sign up here
                     </Link>
                   </p>

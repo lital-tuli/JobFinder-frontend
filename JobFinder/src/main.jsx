@@ -1,18 +1,19 @@
-// src/main.jsx
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
 import App from './App';
 
-// Import Bootstrap CSS and JS
+// Import Bootstrap CSS first
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-// Import Bootstrap Icons
+// Import Bootstrap Icons CSS - ensure this loads
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-// Import custom CSS
-import  './styles/custom.css'
+// Import Bootstrap JS
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+
+// Import custom CSS last to override Bootstrap styles
+import './styles/custom.css';
 
 const container = document.getElementById('root');
 const root = createRoot(container);

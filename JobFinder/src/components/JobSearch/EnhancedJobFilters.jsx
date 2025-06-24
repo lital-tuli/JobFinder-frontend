@@ -1,7 +1,5 @@
-// components/JobFilters.jsx
 import { useState, useEffect } from 'react';
-import { useDebounce } from '../hooks/useDebounce';
-
+import { useDebounce } from "../../hooks/useDebounce";
 const JobFilters = ({ onFiltersChange }) => {
   const [filters, setFilters] = useState({
     q: '',

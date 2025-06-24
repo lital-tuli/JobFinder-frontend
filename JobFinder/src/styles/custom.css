@@ -1,3 +1,4 @@
+
 /* base styles */
 @import './base/variables.css';
 @import './base/typography.css';
@@ -10,6 +11,7 @@
 @import './components/footer.css';
 @import './components/badges.css';
 @import './components/navbar.css'; 
+@import './components/testemonial.css';
 
 /* layout styles */
 

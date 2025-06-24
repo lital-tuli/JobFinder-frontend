@@ -199,43 +199,7 @@ const TestimonialsSection = () => {
         </div>
       </div>
 
-      <style jsx>{`
-        .testimonial-card {
-          transition: all 0.3s ease;
-          border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .testimonial-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .quote-icon {
-          z-index: 1;
-        }
-
-        .stat-item {
-          transition: transform 0.3s ease;
-        }
-
-        .stat-item:hover {
-          transform: translateY(-5px);
-        }
-
-        blockquote p {
-          line-height: 1.6;
-        }
-
-        @media (max-width: 768px) {
-          .testimonial-card {
-            margin-bottom: 1.5rem;
-          }
-          
-          .quote-icon {
-            display: none;
-          }
-        }
-      `}</style>
+      
     </section>
   );
 };
