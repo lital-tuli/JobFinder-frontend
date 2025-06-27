@@ -32,7 +32,7 @@ const RegisterForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
   
-  const { register, authError, clearError();  } = useAuth();
+const { register, authError, clearError } = useAuth();
   const navigate = useNavigate();
 
   // Password validation regex - matches requirements exactly
@@ -131,7 +131,7 @@ const RegisterForm = () => {
     
     // Clear auth error when user makes changes
     if (authError) {
-      clearError(); ();
+      clearError();
     }
   };
 
@@ -155,7 +155,7 @@ const RegisterForm = () => {
     }
 
     setLoading(true);
-    clearError(); ();
+    clearError();
 
     try {
       // Create user data object that EXACTLY matches backend schema
