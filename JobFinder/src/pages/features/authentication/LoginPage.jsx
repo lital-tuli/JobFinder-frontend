@@ -15,21 +15,14 @@ const LoginPage = () => {
 
   const from = location.state?.from || '/';
 
-
-
-  // ✅ FIX: Clear auth errors when component mounts
+  // ✅ FIXED: Clear auth errors when component mounts (no cleanup needed)
   useEffect(() => {
     clearError();
-    
-    return () => {
-      clearError();
-    };
   }, [clearError]);
 
-  // Clear errors when form values change
+  // ✅ FIXED: Clear errors when form values change (simplified)
   useEffect(() => {
-    if (authError) {
-      // Only clear if there's an error and user is typing
+    if (authError && (email || password)) {
       const timer = setTimeout(() => {
         clearError();
       }, 100);
@@ -56,23 +49,55 @@ const LoginPage = () => {
       errors.email = 'Please enter a valid email address';
     }
     
-    if (!password) {
+    if (!password.trim()) {
       errors.password = 'Password is required';
-    } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
     }
     
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    return errors;
   };
 
-  // Clear field errors when user starts typing
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Clear previous errors
+    setFormErrors({});
+    clearError();
+    
+    // Validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const result = await login(email, password);
+      
+      if (result.success) {
+        // Navigation will be handled by the useEffect above
+        console.log('Login successful, user will be redirected');
+      } else {
+        // Error will be handled by the authError from context
+        console.error('Login failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Clear form errors when typing
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
     if (formErrors.email) {
       setFormErrors(prev => ({ ...prev, email: '' }));
     }
-    // Don't call clearError here to avoid loops
   };
 
   const handlePasswordChange = (e) => {
@@ -80,148 +105,92 @@ const LoginPage = () => {
     if (formErrors.password) {
       setFormErrors(prev => ({ ...prev, password: '' }));
     }
-    // Don't call clearError here to avoid loops
-  };
-
-  // ✅ FIXED: Proper login handling - no fake success
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Clear any existing errors
-    setFormErrors({});
-    clearError();
-    
-    // Validate form
-    if (!validateForm()) {
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      console.log('Attempting login for:', email);
-      const result = await login(email, password, rememberMe);
-      console.log('Login successful:', result);
-      
-    } catch (error) {
-      console.error('Login failed:', error.message || error);
-      
-      // Optionally set specific form errors based on error type
-      if (error.message && error.message.toLowerCase().includes('email')) {
-        setFormErrors(prev => ({ ...prev, email: 'Invalid email address' }));
-      } else if (error.message && error.message.toLowerCase().includes('password')) {
-        setFormErrors(prev => ({ ...prev, password: 'Invalid password' }));
-      }
-      
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center bg-light">
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-6 col-lg-5">
-            <div className="card shadow-lg border-0">
-              <div className="card-header bg-primary text-white text-center py-4">
-                <h2 className="mb-0 fw-bold">Welcome Back</h2>
-                <p className="mb-0 opacity-75">Sign in to your account</p>
-              </div>
-              
+            <div className="card shadow">
               <div className="card-body p-5">
-                {/* ✅ FIXED: Show auth error prominently */}
+                <div className="text-center mb-4">
+                  <h1 className="h3 mb-3">Sign In</h1>
+                  <p className="text-muted">Welcome back! Please sign in to your account.</p>
+                </div>
+
+                {/* Display auth errors */}
                 {authError && (
-                  <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    <div>{authError}</div>
+                  <div className="alert alert-danger" role="alert">
+                    {authError}
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} noValidate>
-                  <div className="mb-4">
-                    <label htmlFor="email" className="form-label fw-semibold">
-                      Email Address *
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-3">
+                    <label htmlFor="email" className="form-label">
+                      Email Address
                     </label>
-                    <div className="input-group">
-                      <span className="input-group-text bg-light">
-                        <i className="bi bi-envelope"></i>
-                      </span>
-                      <input
-                        type="email"
-                        id="email"
-                        className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
-                        value={email}
-                        onChange={handleEmailChange}
-                        placeholder="Enter your email"
-                        required
-                        disabled={loading}
-                        autoComplete="email"
-                      />
-                    </div>
+                    <input
+                      type="email"
+                      className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
+                      id="email"
+                      value={email}
+                      onChange={handleEmailChange}
+                      placeholder="Enter your email"
+                      disabled={loading}
+                      autoComplete="email"
+                    />
                     {formErrors.email && (
-                      <div className="invalid-feedback d-block">
-                        <i className="bi bi-exclamation-circle me-1"></i>
+                      <div className="invalid-feedback">
                         {formErrors.email}
                       </div>
                     )}
                   </div>
 
-                  <div className="mb-4">
-                    <label htmlFor="password" className="form-label fw-semibold">
-                      Password *
+                  <div className="mb-3">
+                    <label htmlFor="password" className="form-label">
+                      Password
                     </label>
-                    <div className="input-group">
-                      <span className="input-group-text bg-light">
-                        <i className="bi bi-lock"></i>
-                      </span>
-                      <input
-                        type="password"
-                        id="password"
-                        className={`form-control ${formErrors.password ? 'is-invalid' : ''}`}
-                        value={password}
-                        onChange={handlePasswordChange}
-                        placeholder="Enter your password"
-                        required
-                        disabled={loading}
-                        autoComplete="current-password"
-                      />
-                    </div>
+                    <input
+                      type="password"
+                      className={`form-control ${formErrors.password ? 'is-invalid' : ''}`}
+                      id="password"
+                      value={password}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter your password"
+                      disabled={loading}
+                      autoComplete="current-password"
+                    />
                     {formErrors.password && (
-                      <div className="invalid-feedback d-block">
-                        <i className="bi bi-exclamation-circle me-1"></i>
+                      <div className="invalid-feedback">
                         {formErrors.password}
                       </div>
                     )}
                   </div>
 
-                  <div className="mb-4 d-flex justify-content-between align-items-center">
-                    <div className="form-check">
-                      <input
-                        type="checkbox"
-                        id="rememberMe"
-                        className="form-check-input"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        disabled={loading}
-                      />
-                      <label className="form-check-label" htmlFor="rememberMe">
-                        Remember me
-                      </label>
-                    </div>
-                    <Link to="/forgot-password" className="text-decoration-none small">
-                      Forgot password?
-                    </Link>
+                  <div className="mb-3 form-check">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      disabled={loading}
+                    />
+                    <label className="form-check-label" htmlFor="rememberMe">
+                      Remember me
+                    </label>
                   </div>
 
                   <button
                     type="submit"
-                    className="btn btn-primary w-100 py-3 fw-semibold"
+                    className="btn btn-primary w-100 mb-3"
                     disabled={loading}
                   >
                     {loading ? (
                       <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         Signing in...
                       </>
                     ) : (
@@ -230,12 +199,15 @@ const LoginPage = () => {
                   </button>
                 </form>
 
-                <hr className="my-4" />
-
                 <div className="text-center">
-                  <p className="mb-0 text-muted">
+                  <p className="mb-2">
+                    <Link to="/forgot-password" className="text-decoration-none">
+                      Forgot your password?
+                    </Link>
+                  </p>
+                  <p className="mb-0">
                     Don't have an account?{' '}
-                    <Link to="/register" className="text-decoration-none fw-semibold">
+                    <Link to="/register" className="text-decoration-none">
                       Sign up here
                     </Link>
                   </p>

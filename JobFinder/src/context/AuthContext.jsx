@@ -1,23 +1,12 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import userService from '../services/userService';
 
-// Add to imports
-
-
-// =============================================================================
-// INITIAL STATE
-// =============================================================================
-
 const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: true,
   error: null
 };
-
-// =============================================================================
-// ACTION TYPES
-// =============================================================================
 
 const AUTH_ACTIONS = {
   AUTH_START: 'AUTH_START',
@@ -28,10 +17,6 @@ const AUTH_ACTIONS = {
   CLEAR_ERROR: 'CLEAR_ERROR',
   SET_LOADING: 'SET_LOADING'
 };
-
-// =============================================================================
-// REDUCER
-// =============================================================================
 
 const authReducer = (state, action) => {
   switch (action.type) {
@@ -93,25 +78,12 @@ const authReducer = (state, action) => {
   }
 };
 
-// =============================================================================
-// CONTEXT CREATION
-// =============================================================================
-
 const AuthContext = createContext(null);
-
-// =============================================================================
-// CONTEXT PROVIDER
-// =============================================================================
 
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // =============================================================================
-  // AUTHENTICATION FUNCTIONS
-  // =============================================================================
-
-  // Check authentication status on app load
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       dispatch({ type: AUTH_ACTIONS.AUTH_START });
       
@@ -137,10 +109,9 @@ export const AuthProvider = ({ children }) => {
         payload: { error: error.message }
       });
     }
-  };
+  }, []);
 
-  // Login function
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       dispatch({ type: AUTH_ACTIONS.AUTH_START });
       console.log('Attempting login for user:', email);
@@ -172,10 +143,9 @@ export const AuthProvider = ({ children }) => {
       });
       return { success: false, error: errorMessage };
     }
-  };
+  }, []);
 
-  // Register function
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     try {
       dispatch({ type: AUTH_ACTIONS.AUTH_START });
       console.log('Attempting registration for user:', userData.email);
@@ -207,10 +177,9 @@ export const AuthProvider = ({ children }) => {
       });
       return { success: false, error: errorMessage };
     }
-  };
+  }, []);
 
-  // Logout function
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       console.log('Logging out user');
       await userService.logout();
@@ -218,13 +187,11 @@ export const AuthProvider = ({ children }) => {
       console.log('Logout successful');
     } catch (error) {
       console.error('Logout error:', error);
-      // Still logout locally even if server logout fails
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
     }
-  };
+  }, []);
 
-  // Update user function
-  const updateUser = async (userData) => {
+  const updateUser = useCallback(async (userData) => {
     try {
       console.log('Updating user data:', userData);
       
@@ -247,10 +214,9 @@ export const AuthProvider = ({ children }) => {
       console.error('User update error:', error);
       return { success: false, error: errorMessage };
     }
-  };
+  }, []);
 
-  // Refresh user data
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: { isLoading: true } });
       
@@ -267,38 +233,29 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: { isLoading: false } });
       throw error;
     }
-  };
+  }, []);
 
-  // Clear error function
-const clearError = useCallback(() => {
-  dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-}, []);
-  // =============================================================================
-  // UTILITY FUNCTIONS
-  // =============================================================================
+  const clearError = useCallback(() => {
+    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+  }, []);
 
-  // Check if user has specific role
-  const hasRole = (role) => {
+  const hasRole = useCallback((role) => {
     return state.user?.role === role;
-  };
+  }, [state.user?.role]);
 
-  // Check if user is admin
-  const isAdmin = () => {
+  const isAdmin = useCallback(() => {
     return hasRole('admin');
-  };
+  }, [hasRole]);
 
-  // Check if user is recruiter
-  const isRecruiter = () => {
+  const isRecruiter = useCallback(() => {
     return hasRole('recruiter');
-  };
+  }, [hasRole]);
 
-  // Check if user is job seeker
-  const isJobSeeker = () => {
+  const isJobSeeker = useCallback(() => {
     return hasRole('jobSeeker');
-  };
+  }, [hasRole]);
 
-  // Check if user can perform action
-  const canPerformAction = (action, resource = null) => {
+  const canPerformAction = useCallback((action, resource = null) => {
     if (!state.isAuthenticated) return false;
 
     switch (action) {
@@ -324,24 +281,18 @@ const clearError = useCallback(() => {
       default:
         return false;
     }
-  };
+  }, [state.isAuthenticated, state.user?._id, isRecruiter, isAdmin, isJobSeeker]);
 
-  // =============================================================================
-  // EFFECTS
-  // =============================================================================
-
-  // Check authentication status on mount
   useEffect(() => {
     console.log('AuthContext: Checking authentication on mount');
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
-  // Auto-logout after 4 hours of inactivity (bonus feature)
   useEffect(() => {
     if (!state.isAuthenticated) return;
 
     let inactivityTimer;
-    const INACTIVITY_TIME = 4 * 60 * 60 * 1000; // 4 hours
+    const INACTIVITY_TIME = 4 * 60 * 60 * 1000;
 
     const resetTimer = () => {
       clearTimeout(inactivityTimer);
@@ -353,35 +304,25 @@ const clearError = useCallback(() => {
 
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
     
-    // Set initial timer
     resetTimer();
 
-    // Add event listeners
     events.forEach(event => {
       document.addEventListener(event, resetTimer, true);
     });
 
-    // Cleanup
     return () => {
       clearTimeout(inactivityTimer);
       events.forEach(event => {
         document.removeEventListener(event, resetTimer, true);
       });
     };
-  }, [state.isAuthenticated]);
-
-  // =============================================================================
-  // CONTEXT VALUE
-  // =============================================================================
+  }, [state.isAuthenticated, logout]);
 
   const contextValue = {
-    // State
     user: state.user,
     isAuthenticated: state.isAuthenticated,
     isLoading: state.isLoading,
     error: state.error,
-
-    // Auth functions
     login,
     register,
     logout,
@@ -389,8 +330,6 @@ const clearError = useCallback(() => {
     updateUser,
     refreshUser,
     clearError,
-
-    // Utility functions
     hasRole,
     isAdmin,
     isRecruiter,
@@ -405,10 +344,6 @@ const clearError = useCallback(() => {
   );
 };
 
-// =============================================================================
-// CUSTOM HOOK
-// =============================================================================
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   
@@ -418,9 +353,5 @@ export const useAuth = () => {
   
   return context;
 };
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
 
 export default AuthContext;
