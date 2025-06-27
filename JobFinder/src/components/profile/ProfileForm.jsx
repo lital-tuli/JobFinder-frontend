@@ -1,10 +1,16 @@
+
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import FormField from '../common/FormField/FormField';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/messages/ErrorMessage';
 import SuccessMessage from '../common/messages/SuccessMessage';
-import { uploadProfilePicture } from '../../services/userService';
+import userService from '../../services/userService'; // Fixed import
+
+// Then in your uploadProfileImage function, change:
+// const response = await uploadProfilePicture(file);
+// to:
+// 
 
 const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
   const [formData, setFormData] = useState({
@@ -182,9 +188,8 @@ const ProfileForm = ({ user, onSave, onCancel, loading = false }) => {
 
     try {
       // Use the proper userService function
-      const response = await uploadProfilePicture(file);
-      
-      if (response.error) {
+ const response = await userService.uploadProfilePicture(file);
+       if (response.error) {
         throw new Error(response.message || 'Failed to upload profile picture');
       }
 
