@@ -56,11 +56,10 @@ const SavedJobsPage = () => {
     });
   }, [searchParams]);
 
-  // Clear context error on mount
   useEffect(() => {
-    clearError();
-    return () => clearError();
-  }, [clearError]);
+  clearError();
+  return () => clearError();
+}, []);
 
   // Update URL when filters change
   const updateURL = useCallback((newFilters, newSort, newView) => {

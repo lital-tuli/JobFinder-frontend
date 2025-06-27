@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import userService from '../services/userService';
+
+// Add to imports
+
 
 // =============================================================================
 // INITIAL STATE
@@ -267,10 +270,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Clear error function
-  const clearError = () => {
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
-
+const clearError = useCallback(() => {
+  dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+}, []);
   // =============================================================================
   // UTILITY FUNCTIONS
   // =============================================================================

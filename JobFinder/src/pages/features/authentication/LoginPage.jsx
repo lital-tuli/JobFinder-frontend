@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -15,19 +15,16 @@ const LoginPage = () => {
 
   const from = location.state?.from || '/';
 
-  // ✅ FIX: Memoize clearError to prevent infinite loops
-  const memoizedClearError = useCallback(() => {
-    clearError();
-  }, [clearError]);
 
-  // ✅ FIX: Clear auth errors when component mounts - do NOT include clearError in dependencies
+
+  // ✅ FIX: Clear auth errors when component mounts
   useEffect(() => {
     clearError();
     
     return () => {
       clearError();
     };
-  }, []); // ← Empty dependency array - this is the key fix!
+  }, [clearError]);
 
   // Clear errors when form values change
   useEffect(() => {
@@ -39,7 +36,7 @@ const LoginPage = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [email, password]); // ← Don't include clearError here either
+  }, [email, password, authError, clearError]);
 
   // ✅ FIXED: Only redirect if actually authenticated
   useEffect(() => {
@@ -92,7 +89,7 @@ const LoginPage = () => {
     
     // Clear any existing errors
     setFormErrors({});
-    memoizedClearError(); // Use memoized version
+    clearError();
     
     // Validate form
     if (!validateForm()) {

@@ -38,11 +38,12 @@ const { register, authError, clearError } = useAuth();
   // Password validation regex - matches requirements exactly
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d{4,})(?=.*[!@%$#^&*\-_*]).{8,}$/;
 
-  // Clear auth errors when component mounts or form changes
-  useEffect(() => {
-    clearError(); ();
-    return () => clearError(); ();
-  }, [clearError(); ]);
+useEffect(() => {
+  clearError();
+  return () => {
+    clearError();
+  };
+}, []); 
 
   // Comprehensive validation function
   const validateForm = (step = null) => {
