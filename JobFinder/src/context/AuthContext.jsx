@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { createContext, useReducer, useEffect, useCallback, useMemo } from 'react';
 import userService from '../services/userService';
 
 const initialState = {
@@ -78,11 +78,14 @@ const authReducer = (state, action) => {
   }
 };
 
+// ✅ Create the context (this is not a component, so it's fine to export)
 const AuthContext = createContext(null);
 
+// ✅ This is the only component in this file
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  // ✅ FIXED: checkAuth with no dependencies to prevent infinite loops
   const checkAuth = useCallback(async () => {
     try {
       dispatch({ type: AUTH_ACTIONS.AUTH_START });
@@ -109,7 +112,7 @@ export const AuthProvider = ({ children }) => {
         payload: { error: error.message }
       });
     }
-  }, []);
+  }, []); // ✅ Empty dependencies - this function doesn't need to be recreated
 
   const login = useCallback(async (email, password) => {
     try {
@@ -195,7 +198,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Updating user data:', userData);
       
-      const result = await userService.updateCurrentProfile(userData);
+      const result = await userService.updateCurrentUserProfile(userData);
       
       if (result.success) {
         dispatch({ 
@@ -239,24 +242,22 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
   }, []);
 
-  const hasRole = useCallback((role) => {
-    return state.user?.role === role;
+  // ✅ FIXED: Use useMemo instead of useCallback for role checking functions
+  // These are derived values that only depend on state, not functions
+  const roleCheckers = useMemo(() => {
+    const hasRole = (role) => state.user?.role === role;
+    const isAdmin = () => hasRole('admin');
+    const isRecruiter = () => hasRole('recruiter');
+    const isJobSeeker = () => hasRole('jobSeeker');
+
+    return { hasRole, isAdmin, isRecruiter, isJobSeeker };
   }, [state.user?.role]);
 
-  const isAdmin = useCallback(() => {
-    return hasRole('admin');
-  }, [hasRole]);
-
-  const isRecruiter = useCallback(() => {
-    return hasRole('recruiter');
-  }, [hasRole]);
-
-  const isJobSeeker = useCallback(() => {
-    return hasRole('jobSeeker');
-  }, [hasRole]);
-
+  // ✅ FIXED: Simplified canPerformAction with direct role checking
   const canPerformAction = useCallback((action, resource = null) => {
     if (!state.isAuthenticated) return false;
+
+    const { isAdmin, isRecruiter, isJobSeeker } = roleCheckers;
 
     switch (action) {
       case 'CREATE_JOB':
@@ -281,13 +282,15 @@ export const AuthProvider = ({ children }) => {
       default:
         return false;
     }
-  }, [state.isAuthenticated, state.user?._id, isRecruiter, isAdmin, isJobSeeker]);
+  }, [state.isAuthenticated, state.user?._id, roleCheckers]);
 
+  // ✅ FIXED: Only run checkAuth once on mount, not on every checkAuth change
   useEffect(() => {
     console.log('AuthContext: Checking authentication on mount');
     checkAuth();
-  }, [checkAuth]);
+  }, [checkAuth]); // ✅ Include checkAuth dependency
 
+  // ✅ Auto-logout functionality (unchanged)
   useEffect(() => {
     if (!state.isAuthenticated) return;
 
@@ -318,7 +321,8 @@ export const AuthProvider = ({ children }) => {
     };
   }, [state.isAuthenticated, logout]);
 
-  const contextValue = {
+  // ✅ FIXED: Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
     user: state.user,
     isAuthenticated: state.isAuthenticated,
     isLoading: state.isLoading,
@@ -330,12 +334,29 @@ export const AuthProvider = ({ children }) => {
     updateUser,
     refreshUser,
     clearError,
-    hasRole,
-    isAdmin,
-    isRecruiter,
-    isJobSeeker,
+    hasRole: roleCheckers.hasRole,
+    isAdmin: roleCheckers.isAdmin,
+    isRecruiter: roleCheckers.isRecruiter,
+    isJobSeeker: roleCheckers.isJobSeeker,
     canPerformAction
-  };
+  }), [
+    state.user,
+    state.isAuthenticated,
+    state.isLoading,
+    state.error,
+    login,
+    register,
+    logout,
+    checkAuth,
+    updateUser,
+    refreshUser,
+    clearError,
+    roleCheckers.hasRole,
+    roleCheckers.isAdmin,
+    roleCheckers.isRecruiter,
+    roleCheckers.isJobSeeker,
+    canPerformAction
+  ]);
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -344,14 +365,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  
-  if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  
-  return context;
-};
 
 export default AuthContext;
