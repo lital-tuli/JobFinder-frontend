@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Enhanced API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// ✅ FIXED: Correct API URL to match backend port
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const JOBS_URL = `${API_BASE_URL}/jobs`;
 
 // Request cache for optimization
@@ -255,6 +255,7 @@ export const applyToJob = async (jobId, applicationData = {}) => {
   }
 };
 
+// ✅ FIXED: Now matches backend endpoint /api/jobs/my-applications
 export const getMyApplications = async () => {
   const cacheKey = createCacheKey(`${JOBS_URL}/my-applications`);
   
@@ -284,6 +285,7 @@ export const getMyApplications = async () => {
   }
 };
 
+// ✅ FIXED: Now matches backend endpoint /api/jobs/saved
 export const getMySavedJobs = async () => {
   const cacheKey = createCacheKey(`${JOBS_URL}/saved`);
   
@@ -313,6 +315,7 @@ export const getMySavedJobs = async () => {
   }
 };
 
+// ✅ FIXED: Now matches backend endpoint /api/jobs/my-jobs
 export const getMyJobs = async () => {
   const cacheKey = createCacheKey(`${JOBS_URL}/my-jobs`);
   
@@ -342,6 +345,7 @@ export const getMyJobs = async () => {
   }
 };
 
+// ✅ FIXED: Now matches backend endpoint /api/jobs/search
 export const searchJobs = async (searchParams) => {
   const cacheKey = createCacheKey(`${JOBS_URL}/search`, searchParams);
   
@@ -356,6 +360,11 @@ export const searchJobs = async (searchParams) => {
       headers: getAuthHeaders()
     }).then(response => {
       requestCache.delete(cacheKey);
+      
+      // Handle search response structure
+      if (response.data.jobs) {
+        return response.data; // Return full search response with pagination
+      }
       return validateJobsData(response.data);
     });
 
@@ -368,7 +377,7 @@ export const searchJobs = async (searchParams) => {
   } catch (error) {
     requestCache.delete(cacheKey);
     console.error('❌ searchJobs error:', error);
-    return [];
+    return { jobs: [], pagination: null };
   }
 };
 
