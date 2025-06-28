@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-const JobCategoriesSection = ({ categories = [] }) => {
+const JobCategoriesSection = ({ categories = [], onCategoryClick }) => {
   // Default categories if none provided
   const defaultCategories = [
     { name: 'Development', icon: 'code-slash', count: 45, color: 'primary' },
@@ -15,157 +15,111 @@ const JobCategoriesSection = ({ categories = [] }) => {
 
   const categoriesToDisplay = categories.length > 0 ? categories : defaultCategories;
 
-  const getCategoryLink = (categoryName) => {
-    return `/jobs?search=${encodeURIComponent(categoryName.toLowerCase())}`;
+  const handleCategoryClick = (categoryName) => {
+    if (onCategoryClick) {
+      onCategoryClick(categoryName);
+    }
   };
 
   return (
     <section className="py-5 bg-light">
       <div className="container">
-        {/* Section Header */}
-        <div className="text-center mb-5">
-          <div className="row">
-            <div className="col-lg-8 mx-auto">
-              <span className="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill mb-3">
-                🎯 Browse by Category
-              </span>
-              <h2 className="display-5 fw-bold mb-3">Popular Job Categories</h2>
-              <p className="lead text-muted">
-                Explore opportunities in your field of expertise or discover new career paths
-              </p>
-            </div>
+        <div className="row">
+          <div className="col-lg-8 mx-auto text-center mb-5">
+            <h2 className="fw-bold mb-3">Browse by Category</h2>
+            <p className="text-muted lead">
+              Discover opportunities across different industries and job functions
+            </p>
           </div>
         </div>
 
-        {/* Categories Grid */}
         <div className="row g-4 mb-5">
           {categoriesToDisplay.map((category, index) => (
-            <div className="col-lg-4 col-md-6" key={index}>
-              <Link 
-                to={getCategoryLink(category.name)}
-                className="text-decoration-none"
+            <div key={`category-${index}-${category.name}`} className="col-lg-4 col-md-6">
+              <div 
+                className="category-card card h-100 border-0 shadow-sm position-relative overflow-hidden" 
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleCategoryClick(category.name)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleCategoryClick(category.name);
+                  }
+                }}
+                aria-label={`Browse ${category.name} jobs`}
               >
-                <div className="category-card h-100 p-4 bg-white rounded-3 shadow-sm border-0 position-relative overflow-hidden">
+                <div className="card-body p-4 text-center">
                   {/* Background Pattern */}
-                  <div className="category-bg-pattern position-absolute top-0 end-0">
-                    <div className={`category-pattern bg-${category.color || 'primary'} bg-opacity-10`}></div>
+                  <div 
+                    className={`category-pattern position-absolute bg-${category.color || 'primary'} opacity-10`}
+                  ></div>
+                  
+                  {/* Icon */}
+                  <div className={`category-icon d-inline-flex align-items-center justify-content-center rounded-circle bg-${category.color || 'primary'} text-white mb-3`} 
+                       style={{ width: '80px', height: '80px' }}>
+                    <i className={`bi bi-${category.icon} fs-2`}></i>
                   </div>
-
-                  {/* Category Icon */}
-                  <div className="category-icon-wrapper mb-3">
-                    <div className={`category-icon bg-${category.color || 'primary'} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto`}>
-                      <i className={`bi bi-${category.icon} text-${category.color || 'primary'} fs-1`}></i>
-                    </div>
-                  </div>
-
-                  {/* Category Info */}
-                  <div className="text-center position-relative">
-                    <h4 className="fw-bold mb-2">{category.name}</h4>
-                    <p className="text-muted mb-3">
-                      {category.count} open position{category.count !== 1 ? 's' : ''}
-                    </p>
-                    
-                    {/* View Jobs Button */}
+                  
+                  {/* Content */}
+                  <h5 className="fw-bold mb-2">{category.name}</h5>
+                  <p className="text-muted mb-3">
+                    {category.count} {category.count === 1 ? 'position' : 'positions'} available
+                  </p>
+                  
+                  {/* Hover Overlay */}
+                  <div className="category-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
                     <div className="category-cta">
-                      <span className={`btn btn-outline-${category.color || 'primary'} btn-sm`}>
-                        View Jobs
-                        <i className="bi bi-arrow-right ms-2"></i>
+                      <span className={`btn btn-${category.color || 'primary'}`}>
+                        View Jobs <i className="bi bi-arrow-right ms-1"></i>
                       </span>
                     </div>
                   </div>
-
-                  {/* Hover Effect Overlay */}
-                  <div className="category-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
-                    <div className={`btn btn-${category.color || 'primary'} btn-lg px-4`}>
-                      <i className="bi bi-search me-2"></i>
-                      Explore {category.name}
-                    </div>
-                  </div>
                 </div>
-              </Link>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Additional Categories Link */}
-        <div className="text-center">
-          <div className="row">
-            <div className="col-lg-8 mx-auto">
-              <div className="bg-white rounded-3 p-4 shadow-sm">
-                <h5 className="fw-bold mb-3">Looking for Something Specific?</h5>
-                <p className="text-muted mb-4">
-                  Can't find your field? Browse all available jobs or use our advanced search to find exactly what you're looking for.
-                </p>
-                <div className="d-flex justify-content-center gap-3 flex-wrap">
-                  <Link to="/jobs" className="btn btn-primary px-4">
-                    <i className="bi bi-search me-2"></i>
-                    Browse All Jobs
-                  </Link>
-                  <Link to="/companies" className="btn btn-outline-primary px-4">
-                    <i className="bi bi-building me-2"></i>
-                    Browse Companies
-                  </Link>
-                </div>
-              </div>
+        {/* Quick Stats */}
+        <div className="row text-center">
+          <div className="col-md-4">
+            <div className="quick-stat p-3">
+              <h3 className="fw-bold text-primary mb-1">
+                {categories.reduce((sum, cat) => sum + cat.count, 0) || '150+'}
+              </h3>
+              <p className="text-muted mb-0">Total Jobs</p>
             </div>
           </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="row mt-5">
-          <div className="col-lg-8 mx-auto">
-            <div className="row text-center">
-              <div className="col-md-4 mb-3">
-                <div className="quick-stat">
-                  <div className="bg-primary bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" 
-                       style={{ width: '60px', height: '60px' }}>
-                    <i className="bi bi-briefcase text-primary fs-4"></i>
-                  </div>
-                  <h6 className="fw-semibold mb-1">Fresh Opportunities</h6>
-                  <small className="text-muted">New jobs posted daily</small>
-                </div>
-              </div>
-              <div className="col-md-4 mb-3">
-                <div className="quick-stat">
-                  <div className="bg-success bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" 
-                       style={{ width: '60px', height: '60px' }}>
-                    <i className="bi bi-shield-check text-success fs-4"></i>
-                  </div>
-                  <h6 className="fw-semibold mb-1">Verified Employers</h6>
-                  <small className="text-muted">All companies are verified</small>
-                </div>
-              </div>
-              <div className="col-md-4 mb-3">
-                <div className="quick-stat">
-                  <div className="bg-info bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" 
-                       style={{ width: '60px', height: '60px' }}>
-                    <i className="bi bi-lightning-charge text-info fs-4"></i>
-                  </div>
-                  <h6 className="fw-semibold mb-1">Quick Applications</h6>
-                  <small className="text-muted">Apply with one click</small>
-                </div>
-              </div>
+          <div className="col-md-4">
+            <div className="quick-stat p-3">
+              <h3 className="fw-bold text-success mb-1">50+</h3>
+              <p className="text-muted mb-0">Companies Hiring</p>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="quick-stat p-3">
+              <h3 className="fw-bold text-info mb-1">1,200+</h3>
+              <p className="text-muted mb-0">Job Seekers</p>
             </div>
           </div>
         </div>
       </div>
 
-      <style jsx>{`
+      {/* Custom Styles - Fixed: Removed jsx attribute and used proper CSS-in-JS */}
+      <style>{`
         .category-card {
           transition: all 0.3s ease;
           cursor: pointer;
-          border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .category-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+          transform: translateY(-5px);
+          box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
         }
 
         .category-icon {
-          width: 80px;
-          height: 80px;
-          transition: all 0.3s ease;
+          transition: transform 0.3s ease;
         }
 
         .category-card:hover .category-icon {
@@ -234,7 +188,8 @@ JobCategoriesSection.propTypes = {
       count: PropTypes.number.isRequired,
       color: PropTypes.string
     })
-  )
+  ),
+  onCategoryClick: PropTypes.func
 };
 
 export default JobCategoriesSection;

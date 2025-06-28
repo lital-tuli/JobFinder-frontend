@@ -1,201 +1,193 @@
-// Fixed jobService.js - Prevents duplicate calls and improves error handling
-
 import axios from 'axios';
 
-// Create axios instance with base configuration
+// Enhanced API configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const JOBS_URL = `${API_BASE_URL}/jobs`;
+
+// Request cache for optimization
+const requestCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Create axios instance with better error handling
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 30000,
+  baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }
 });
 
-// Add request interceptor for authentication
+// Enhanced request interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    // Add auth token if available
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      config.headers['x-auth-token'] = token;
     }
+    
+    // Log API calls for debugging
+    console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
-  (error) => Promise.reject(error)
-);
-
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Clear tokens on authentication error
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      // Only redirect if not already on login page
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
-    }
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
-const JOBS_URL = '/jobs';
+// Enhanced response interceptor
+api.interceptors.response.use(
+  (response) => {
+    console.log(`✅ API Response: ${response.status} - ${response.config.url}`);
+    
+    // Validate that we received JSON data
+    if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
+      console.error('❌ Received HTML instead of JSON data');
+      throw new Error('Server returned HTML instead of JSON. Check your API endpoints.');
+    }
+    
+    return response;
+  },
+  (error) => {
+    console.error('❌ API Response Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      message: error.message,
+      data: error.response?.data
+    });
 
-// Cache to prevent duplicate simultaneous requests
-const requestCache = new Map();
-const CACHE_DURATION = 30000; // 30 seconds
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
-// Helper function to create cache key
+// Utility functions
 const createCacheKey = (url, params = {}) => {
-  const paramString = Object.keys(params)
-    .sort()
-    .map(key => `${key}=${params[key]}`)
-    .join('&');
-  return `${url}?${paramString}`;
+  return `${url}${JSON.stringify(params)}`;
 };
 
-// Helper function to check if request is in progress
 const isRequestInProgress = (cacheKey) => {
   const cached = requestCache.get(cacheKey);
-  return cached && cached.timestamp > Date.now() - CACHE_DURATION;
+  return cached && (Date.now() - cached.timestamp < CACHE_DURATION);
 };
 
-// Helper function to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
-  return token ? { 'x-auth-token': token } : {};
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Helper function to handle API errors consistently
 const handleApiError = (error) => {
-  if (error.response?.status === 401) {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
-    throw new Error('Session expired. Please login again.');
+  if (error.response?.data?.message) {
+    throw new Error(error.response.data.message);
+  } else if (error.message) {
+    throw new Error(error.message);
+  } else {
+    throw new Error('An unexpected error occurred');
+  }
+};
+
+// Validate response data structure
+const validateJobsData = (data) => {
+  if (!data) {
+    console.warn('⚠️ No data received from API');
+    return [];
   }
   
-  const message = error.response?.data?.message || error.message || 'An error occurred';
-  throw new Error(message);
+  if (typeof data === 'string') {
+    console.error('❌ Received string data instead of array/object:', data.substring(0, 100));
+    return [];
+  }
+  
+  if (Array.isArray(data)) {
+    console.log(`📊 Received ${data.length} jobs from API`);
+    return data;
+  }
+  
+  if (data.jobs && Array.isArray(data.jobs)) {
+    console.log(`📊 Received ${data.jobs.length} jobs from nested API response`);
+    return data.jobs;
+  }
+  
+  if (data.data && Array.isArray(data.data)) {
+    console.log(`📊 Received ${data.data.length} jobs from nested API response`);
+    return data.data;
+  }
+  
+  console.warn('⚠️ Unexpected data structure:', data);
+  return [];
 };
 
-// ✅ FIXED: Get all jobs with caching to prevent duplicate calls
+// Main API functions
 export const getAllJobs = async (filters = {}) => {
-  const cacheKey = createCacheKey(`${JOBS_URL}`, filters);
+  const cacheKey = createCacheKey(JOBS_URL, filters);
   
-  // Check if same request is already in progress
   if (isRequestInProgress(cacheKey)) {
     console.log('🔄 Request already in progress, waiting...');
     const cached = requestCache.get(cacheKey);
     return cached.promise;
   }
 
-  console.log('🔍 Fetching jobs with filters:', filters);
-  
   try {
-    // Create the request promise
+    console.log('🔍 Fetching jobs with filters:', filters);
+    
     const requestPromise = api.get(JOBS_URL, {
       params: filters,
       headers: getAuthHeaders()
     }).then(response => {
-      console.log('✅ Jobs API response status:', response.status);
-      console.log('📊 Jobs data received:', response.data?.length || 0, 'jobs');
-      
-      // Clear cache entry on success
       requestCache.delete(cacheKey);
+      console.log('✅ Jobs API response status:', response.status);
+      console.log('📊 Jobs data received:', response.data);
       
-      // Ensure we return an array
-      if (Array.isArray(response.data)) {
-        return response.data;
-      } else if (response.data?.jobs && Array.isArray(response.data.jobs)) {
-        return response.data.jobs;
-      } else {
-        console.warn('⚠️ Unexpected data structure:', response.data);
-        return [];
+      // Validate and return data
+      const validatedData = validateJobsData(response.data);
+      
+      if (typeof response.data === 'string') {
+        console.error('⚠️ Unexpected data structure:', response.data);
+        throw new Error('Server configuration error: receiving HTML instead of JSON');
       }
+      
+      return validatedData;
     });
 
-    // Cache the request
     requestCache.set(cacheKey, {
       promise: requestPromise,
       timestamp: Date.now()
     });
 
     return await requestPromise;
-    
   } catch (error) {
-    // Clear cache entry on error
     requestCache.delete(cacheKey);
-    
     console.error('❌ getAllJobs error:', error);
     
-    // Handle 304 Not Modified (data hasn't changed)
-    if (error.response?.status === 304) {
-      return error.response.data || [];
-    }
-    
-    handleApiError(error);
+    // Return empty array on error to prevent app crashes
+    return [];
   }
 };
 
-// ✅ FIXED: Get job by ID with better error handling
-export const getJobById = async (jobId) => {
-  if (!jobId) {
-    throw new Error('Job ID is required');
-  }
-
-  const cacheKey = createCacheKey(`${JOBS_URL}/${jobId}`);
-  
-  // Check cache for individual job requests
-  if (isRequestInProgress(cacheKey)) {
-    const cached = requestCache.get(cacheKey);
-    return cached.promise;
-  }
-
+export const getJobById = async (id) => {
   try {
-    console.log('🔍 Fetching job by ID:', jobId);
-    
-    const requestPromise = api.get(`${JOBS_URL}/${jobId}`, {
+    const response = await api.get(`${JOBS_URL}/${id}`, {
       headers: getAuthHeaders()
-    }).then(response => {
-      requestCache.delete(cacheKey);
-      console.log('✅ Job details fetched successfully');
-      return response.data;
     });
-
-    requestCache.set(cacheKey, {
-      promise: requestPromise,
-      timestamp: Date.now()
-    });
-
-    return await requestPromise;
-    
+    return response.data;
   } catch (error) {
-    requestCache.delete(cacheKey);
     console.error('❌ getJobById error:', error);
     handleApiError(error);
   }
 };
 
-// ✅ FIXED: Create job with proper validation
 export const createJob = async (jobData) => {
   try {
-    if (!jobData || typeof jobData !== 'object') {
-      throw new Error('Valid job data is required');
-    }
-
-    console.log('📝 Creating new job:', jobData.title);
-    
     const response = await api.post(JOBS_URL, jobData, {
       headers: getAuthHeaders()
     });
-    
-    console.log('✅ Job created successfully');
-    
-    // Clear jobs cache since we have new data
-    requestCache.clear();
-    
     return response.data;
   } catch (error) {
     console.error('❌ createJob error:', error);
@@ -203,28 +195,11 @@ export const createJob = async (jobData) => {
   }
 };
 
-// ✅ FIXED: Update job
-export const updateJob = async (jobId, jobData) => {
+export const updateJob = async (id, jobData) => {
   try {
-    if (!jobId) {
-      throw new Error('Job ID is required');
-    }
-    
-    if (!jobData || typeof jobData !== 'object') {
-      throw new Error('Valid job data is required');
-    }
-
-    console.log('📝 Updating job:', jobId);
-    
-    const response = await api.put(`${JOBS_URL}/${jobId}`, jobData, {
+    const response = await api.put(`${JOBS_URL}/${id}`, jobData, {
       headers: getAuthHeaders()
     });
-    
-    console.log('✅ Job updated successfully');
-    
-    // Clear relevant cache entries
-    requestCache.clear();
-    
     return response.data;
   } catch (error) {
     console.error('❌ updateJob error:', error);
@@ -232,43 +207,23 @@ export const updateJob = async (jobId, jobData) => {
   }
 };
 
-// ✅ FIXED: Delete job
-export const deleteJob = async (jobId) => {
+export const deleteJob = async (id) => {
   try {
-    if (!jobId) {
-      throw new Error('Job ID is required');
-    }
-
-    console.log('🗑️ Deleting job:', jobId);
-    
-    const response = await api.delete(`${JOBS_URL}/${jobId}`, {
+    await api.delete(`${JOBS_URL}/${id}`, {
       headers: getAuthHeaders()
     });
-    
-    console.log('✅ Job deleted successfully');
-    
-    // Clear cache
-    requestCache.clear();
-    
-    return response.data;
+    return true;
   } catch (error) {
     console.error('❌ deleteJob error:', error);
     handleApiError(error);
   }
 };
 
-// ✅ FIXED: Save/unsave job
 export const saveJob = async (jobId) => {
   try {
-    if (!jobId) {
-      throw new Error('Job ID is required');
-    }
-
     const response = await api.post(`${JOBS_URL}/${jobId}/save`, {}, {
       headers: getAuthHeaders()
     });
-    
-    console.log('✅ Job saved successfully');
     return response.data;
   } catch (error) {
     console.error('❌ saveJob error:', error);
@@ -278,36 +233,21 @@ export const saveJob = async (jobId) => {
 
 export const unsaveJob = async (jobId) => {
   try {
-    if (!jobId) {
-      throw new Error('Job ID is required');
-    }
-
-    const response = await api.delete(`${JOBS_URL}/${jobId}/save`, {
+    await api.delete(`${JOBS_URL}/${jobId}/save`, {
       headers: getAuthHeaders()
     });
-    
-    console.log('✅ Job unsaved successfully');
-    return response.data;
+    return true;
   } catch (error) {
     console.error('❌ unsaveJob error:', error);
     handleApiError(error);
   }
 };
 
-// ✅ FIXED: Apply to job
 export const applyToJob = async (jobId, applicationData = {}) => {
   try {
-    if (!jobId) {
-      throw new Error('Job ID is required');
-    }
-
-    console.log('📋 Applying to job:', jobId);
-
     const response = await api.post(`${JOBS_URL}/${jobId}/apply`, applicationData, {
       headers: getAuthHeaders()
     });
-    
-    console.log('✅ Application submitted successfully');
     return response.data;
   } catch (error) {
     console.error('❌ applyToJob error:', error);
@@ -315,7 +255,6 @@ export const applyToJob = async (jobId, applicationData = {}) => {
   }
 };
 
-// ✅ FIXED: Get user's applications with caching
 export const getMyApplications = async () => {
   const cacheKey = createCacheKey(`${JOBS_URL}/my-applications`);
   
@@ -329,7 +268,7 @@ export const getMyApplications = async () => {
       headers: getAuthHeaders()
     }).then(response => {
       requestCache.delete(cacheKey);
-      return Array.isArray(response.data) ? response.data : [];
+      return validateJobsData(response.data);
     });
 
     requestCache.set(cacheKey, {
@@ -341,17 +280,12 @@ export const getMyApplications = async () => {
   } catch (error) {
     requestCache.delete(cacheKey);
     console.error('❌ getMyApplications error:', error);
-    
-    if (error.response?.status === 304) {
-      return [];
-    }
-    handleApiError(error);
+    return [];
   }
 };
 
-// ✅ FIXED: Get user's saved jobs with caching
 export const getMySavedJobs = async () => {
-  const cacheKey = createCacheKey(`${JOBS_URL}/my-saved`);
+  const cacheKey = createCacheKey(`${JOBS_URL}/saved`);
   
   if (isRequestInProgress(cacheKey)) {
     const cached = requestCache.get(cacheKey);
@@ -359,11 +293,11 @@ export const getMySavedJobs = async () => {
   }
 
   try {
-    const requestPromise = api.get(`${JOBS_URL}/my-saved`, {
+    const requestPromise = api.get(`${JOBS_URL}/saved`, {
       headers: getAuthHeaders()
     }).then(response => {
       requestCache.delete(cacheKey);
-      return Array.isArray(response.data) ? response.data : [];
+      return validateJobsData(response.data);
     });
 
     requestCache.set(cacheKey, {
@@ -375,15 +309,10 @@ export const getMySavedJobs = async () => {
   } catch (error) {
     requestCache.delete(cacheKey);
     console.error('❌ getMySavedJobs error:', error);
-    
-    if (error.response?.status === 304) {
-      return [];
-    }
-    handleApiError(error);
+    return [];
   }
 };
 
-// ✅ FIXED: Get user's posted jobs
 export const getMyJobs = async () => {
   const cacheKey = createCacheKey(`${JOBS_URL}/my-jobs`);
   
@@ -397,7 +326,7 @@ export const getMyJobs = async () => {
       headers: getAuthHeaders()
     }).then(response => {
       requestCache.delete(cacheKey);
-      return Array.isArray(response.data) ? response.data : [];
+      return validateJobsData(response.data);
     });
 
     requestCache.set(cacheKey, {
@@ -409,18 +338,10 @@ export const getMyJobs = async () => {
   } catch (error) {
     requestCache.delete(cacheKey);
     console.error('❌ getMyJobs error:', error);
-    
-    if (error.response?.status === 304) {
-      return [];
-    }
-    handleApiError(error);
+    return [];
   }
 };
 
-// Alternative export name for backward compatibility
-export const getMyJobListings = getMyJobs;
-
-// ✅ FIXED: Search jobs
 export const searchJobs = async (searchParams) => {
   const cacheKey = createCacheKey(`${JOBS_URL}/search`, searchParams);
   
@@ -435,7 +356,7 @@ export const searchJobs = async (searchParams) => {
       headers: getAuthHeaders()
     }).then(response => {
       requestCache.delete(cacheKey);
-      return Array.isArray(response.data) ? response.data : [];
+      return validateJobsData(response.data);
     });
 
     requestCache.set(cacheKey, {
@@ -447,21 +368,20 @@ export const searchJobs = async (searchParams) => {
   } catch (error) {
     requestCache.delete(cacheKey);
     console.error('❌ searchJobs error:', error);
-    
-    if (error.response?.status === 304) {
-      return [];
-    }
-    handleApiError(error);
+    return [];
   }
 };
 
-// Clear cache function for manual cleanup
+// Clear cache function
 export const clearJobsCache = () => {
   requestCache.clear();
   console.log('🧹 Jobs cache cleared');
 };
 
-// Default export with all functions
+// Alternative export names for backward compatibility
+export const getMyJobListings = getMyJobs;
+
+// Default export
 const jobService = {
   getAllJobs,
   getJobById,
