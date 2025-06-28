@@ -1,157 +1,284 @@
-// Fixed HomePage.jsx - Prevents infinite re-renders
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { 
+  useState, 
+  useEffect, 
+  useCallback, 
+  useMemo, 
+  useRef,
+  memo
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useJobInteractions } from '../hooks/useJobInteractions';
 import jobService from '../services/jobService';
-import HeroSection from '../components/sections/home/HeroSection';
-import FeaturedJobsSection from '../components/sections/home/FeaturedJobsSection';
-import JobCategoriesSection from '../components/sections/home/JobCategoriesSection';
-import HowItWorksSection from '../components/sections/home/HowItWorksSection';
-import TestimonialsSection from '../components/sections/home/TestimonialsSection';
-import CTASection from '../components/sections/home/CTASection';
-import EnhancedJobFilters from "../components/JobSearch/EnhancedJobFilters";
+import { logger } from '../utils/logger';
+import { debounce } from '../utils/performance';
 
-const HomePage = () => {
-  // Basic state
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [siteStats, setSiteStats] = useState({
-    totalJobs: 0,
-    totalCompanies: 0,
-    totalUsers: '1,500+'
+// Lazy load components for better performance
+const HeroSection = React.lazy(() => import('../components/sections/home/HeroSection'));
+const FeaturedJobsSection = React.lazy(() => import('../components/sections/home/FeaturedJobsSection'));
+const JobCategoriesSection = React.lazy(() => import('../components/sections/home/JobCategoriesSection'));
+const HowItWorksSection = React.lazy(() => import('../components/sections/home/HowItWorksSection'));
+const TestimonialsSection = React.lazy(() => import('../components/sections/home/TestimonialsSection'));
+const CTASection = React.lazy(() => import('../components/sections/home/CTASection'));
+
+// Loading skeleton components
+const HeroSkeleton = () => (
+  <div className="hero-skeleton animate-pulse bg-light" style={{ height: '600px' }} />
+);
+
+const SectionSkeleton = () => (
+  <div className="section-skeleton animate-pulse bg-light mb-4" style={{ height: '300px' }} />
+);
+
+// Constants
+const FEATURED_JOBS_COUNT = 6;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const RETRY_ATTEMPTS = 3;
+const RETRY_DELAY = 1000;
+
+// Job categories configuration
+const JOB_CATEGORIES_CONFIG = [
+  { 
+    name: 'Development', 
+    icon: 'bi-code-slash', 
+    color: 'primary',
+    keywords: ['developer', 'engineer', 'programmer', 'software', 'frontend', 'backend', 'fullstack']
+  },
+  { 
+    name: 'Design', 
+    icon: 'bi-palette', 
+    color: 'info',
+    keywords: ['design', 'ui', 'ux', 'graphic', 'visual', 'creative']
+  },
+  { 
+    name: 'Marketing', 
+    icon: 'bi-megaphone', 
+    color: 'success',
+    keywords: ['marketing', 'digital', 'seo', 'content', 'social media']
+  },
+  { 
+    name: 'Sales', 
+    icon: 'bi-graph-up-arrow', 
+    color: 'warning',
+    keywords: ['sales', 'business development', 'account', 'revenue']
+  },
+  { 
+    name: 'Management', 
+    icon: 'bi-people', 
+    color: 'danger',
+    keywords: ['manager', 'management', 'director', 'lead', 'supervisor']
+  },
+  { 
+    name: 'Customer Service', 
+    icon: 'bi-headset', 
+    color: 'secondary',
+    keywords: ['support', 'customer', 'service', 'help desk', 'client']
+  }
+];
+
+// Custom hooks for better organization
+const useHomePageData = () => {
+  const [state, setState] = useState({
+    allJobs: [],
+    featuredJobs: [],
+    loading: true,
+    error: null,
+    lastFetch: null
   });
-
-  // Enhanced filtering state
-  const [allJobs, setAllJobs] = useState([]);
-  const [featuredJobs, setFeaturedJobs] = useState([]);
-
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
   
-  // Use the job interactions hook
-  const jobInteractions = useJobInteractions();
-  const { isJobSaved, toggleSaveJob } = jobInteractions || {
-    isJobSaved: () => false,
-    toggleSaveJob: async () => {
-      console.warn('toggleSaveJob fallback called');
-    },
-  };
+  const abortControllerRef = useRef(null);
+  const retryCountRef = useRef(0);
 
-  // ✅ FIX 1: Memoize category generation to prevent recreation
-  // ✅ FIX 1: Memoize category generation to prevent recreation
-  const generateJobCategories = useCallback((jobs) => {
-    const categoryMap = {};
-    jobs.forEach(job => {
-      const title = job.title?.toLowerCase() || '';
-      if (title.includes('developer') || title.includes('engineer') || title.includes('programmer')) {
-        categoryMap['Development'] = (categoryMap['Development'] || 0) + 1;
-      } else if (title.includes('design') || title.includes('ui') || title.includes('ux')) {
-        categoryMap['Design'] = (categoryMap['Design'] || 0) + 1;
-      } else if (title.includes('marketing')) {
-        categoryMap['Marketing'] = (categoryMap['Marketing'] || 0) + 1;
-      } else if (title.includes('sales')) {
-        categoryMap['Sales'] = (categoryMap['Sales'] || 0) + 1;
-      } else if (title.includes('manager') || title.includes('management')) {
-        categoryMap['Management'] = (categoryMap['Management'] || 0) + 1;
-      } else if (title.includes('support') || title.includes('customer')) {
-        categoryMap['Customer Service'] = (categoryMap['Customer Service'] || 0) + 1;
+  // Optimized fetch function with caching and retry logic
+  const fetchData = useCallback(async (forceRefresh = false) => {
+    // Check cache first
+    const now = Date.now();
+    if (!forceRefresh && state.lastFetch && (now - state.lastFetch < CACHE_DURATION)) {
+      logger.info('Using cached data');
+      return;
+    }
+
+    // Cancel previous request if still pending
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
+    setState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      logger.api.request('GET', '/api/jobs');
+      
+      const data = await jobService.getAllJobs({}, {
+        signal: abortControllerRef.current.signal
+      });
+
+      const jobsArray = Array.isArray(data) ? data : [];
+      
+      if (jobsArray.length === 0) {
+        logger.warning('No jobs received from API');
       }
-    });
 
-    const categoriesWithIcons = [
-      { name: 'Development', icon: 'bi-code-slash', count: categoryMap['Development'] || 0, color: 'primary' },
-      { name: 'Design', icon: 'bi-palette', count: categoryMap['Design'] || 0, color: 'info' },
-      { name: 'Marketing', icon: 'bi-megaphone', count: categoryMap['Marketing'] || 0, color: 'success' },
-      { name: 'Sales', icon: 'bi-graph-up-arrow', count: categoryMap['Sales'] || 0, color: 'warning' },
-      { name: 'Management', icon: 'bi-people', count: categoryMap['Management'] || 0, color: 'danger' },
-      { name: 'Customer Service', icon: 'bi-headset', count: categoryMap['Customer Service'] || 0, color: 'secondary' }
-    ];
+      setState({
+        allJobs: jobsArray,
+        featuredJobs: jobsArray.slice(0, FEATURED_JOBS_COUNT),
+        loading: false,
+        error: null,
+        lastFetch: now
+      });
 
-    return categoriesWithIcons.filter(cat => cat.count > 0);
-  }, []); // Empty deps since this function is pure
+      retryCountRef.current = 0;
+      logger.success(`Loaded ${jobsArray.length} jobs`);
 
-  // ✅ FIX 2: Memoize filter handler
-  const handleFilteredJobs = useCallback((filtered) => {
-    // Update featured jobs to show filtered results (latest 6)
-    setFeaturedJobs(filtered.slice(0, 6));
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        logger.info('Request was cancelled');
+        return;
+      }
+
+      logger.error('Failed to fetch jobs:', error);
+
+      // Retry logic
+      if (retryCountRef.current < RETRY_ATTEMPTS) {
+        retryCountRef.current++;
+        logger.info(`Retrying... Attempt ${retryCountRef.current}/${RETRY_ATTEMPTS}`);
+        
+        setTimeout(() => {
+          fetchData(forceRefresh);
+        }, RETRY_DELAY * retryCountRef.current);
+        
+        return;
+      }
+
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: error.message || 'Failed to load jobs'
+      }));
+    }
+  }, [state.lastFetch]);
+
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
-  // Fetch homepage data
-  const fetchHomePageData = useCallback(async () => {
-    if (loading) return; // Prevent multiple simultaneous calls
-    
-    setLoading(true);
-    setError('');
-    
-    try {
-      console.log('🔄 Fetching homepage data...');
-      const data = await jobService.getAllJobs();
-      console.log('📊 Raw API response:', data);
-      
-      // Ensure we have an array
-      const jobsArray = Array.isArray(data) ? data : [];
-      console.log('📊 Processed jobs array:', jobsArray.length, 'jobs');
-      
-      // Update all job-related state in one batch
-      setAllJobs(jobsArray);
-      setFeaturedJobs(jobsArray.slice(0, 6));
-      
-      // Update site stats
-      const uniqueCompanies = [...new Set(jobsArray.map(job => job.company))];
-      setSiteStats(prev => ({
-        ...prev,
-        totalJobs: jobsArray.length,
-        totalCompanies: uniqueCompanies.length
-      }));
+  return { ...state, fetchData, refetch: () => fetchData(true) };
+};
 
-      console.log('✅ Homepage data updated successfully');
-      
-    } catch (err) {
-      console.error('❌ Failed to fetch homepage data:', err);
-      setError('Failed to load job data. Please try again later.');
-      
-      // Set empty arrays to prevent undefined errors
-      setAllJobs([]);
-      setFeaturedJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [loading]);
+const useSiteStats = (jobs) => {
+  return useMemo(() => {
+    const uniqueCompanies = new Set(jobs.map(job => job.company?.trim()).filter(Boolean));
+    
+    return {
+      totalJobs: jobs.length,
+      totalCompanies: uniqueCompanies.size,
+      totalUsers: '1,500+' // This could be fetched from API if needed
+    };
+  }, [jobs]);
+};
 
-  // ✅ FIX 4: Use proper useEffect with correct dependencies
+const useJobCategories = (jobs) => {
+  return useMemo(() => {
+    const categoryMap = new Map();
+
+    // Initialize categories
+    JOB_CATEGORIES_CONFIG.forEach(category => {
+      categoryMap.set(category.name, { ...category, count: 0 });
+    });
+
+    // Count jobs per category
+    jobs.forEach(job => {
+      const title = (job.title || '').toLowerCase();
+      const description = (job.description || '').toLowerCase();
+      const searchText = `${title} ${description}`;
+
+      JOB_CATEGORIES_CONFIG.forEach(category => {
+        const hasMatch = category.keywords.some(keyword => 
+          searchText.includes(keyword.toLowerCase())
+        );
+        
+        if (hasMatch) {
+          const current = categoryMap.get(category.name);
+          categoryMap.set(category.name, { ...current, count: current.count + 1 });
+        }
+      });
+    });
+
+    return Array.from(categoryMap.values()).filter(category => category.count > 0);
+  }, [jobs]);
+};
+
+// Memoized error component
+const ErrorAlert = memo(({ error, onDismiss, onRetry }) => (
+  <div className="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+    <div className="d-flex align-items-center">
+      <i className="bi bi-exclamation-triangle-fill me-2"></i>
+      <div className="flex-grow-1">
+        <strong>Error:</strong> {error}
+      </div>
+      <div className="ms-3">
+        <button 
+          type="button" 
+          className="btn btn-outline-danger btn-sm me-2"
+          onClick={onRetry}
+        >
+          <i className="bi bi-arrow-clockwise me-1"></i>
+          Retry
+        </button>
+        <button 
+          type="button" 
+          className="btn-close" 
+          onClick={onDismiss}
+          aria-label="Close"
+        />
+      </div>
+    </div>
+  </div>
+));
+
+// Main HomePage component
+const HomePage = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const jobInteractions = useJobInteractions();
+  
+  // Custom hooks
+  const { allJobs, featuredJobs, loading, error, fetchData, refetch } = useHomePageData();
+  const siteStats = useSiteStats(allJobs);
+  const jobCategories = useJobCategories(allJobs);
+
+  // Initialize data on mount
   useEffect(() => {
-    fetchHomePageData();
-  }, [fetchHomePageData]); // Include fetchHomePageData dependency
+    fetchData();
+  }, [fetchData]);
 
-  // ✅ FIX 5: Memoize expensive calculations
-  const memoizedSiteStats = useMemo(() => siteStats, [siteStats]);
-  const memoizedFeaturedJobs = useMemo(() => featuredJobs, [featuredJobs]);
-  const memoizedJobCategories = useMemo(() => generateJobCategories(allJobs), [generateJobCategories, allJobs]);
-  const handleSearch = useCallback((searchData) => {
-    const { searchTerm: term, location: loc } = searchData;
-    
-    // Build query parameters
+  // Memoized handlers
+  const handleSearch = useCallback(debounce((searchData) => {
+    const { searchTerm, location } = searchData;
     const queryParams = new URLSearchParams();
-    if (term && term.trim()) {
-      queryParams.set('search', term.trim());
+    
+    if (searchTerm?.trim()) {
+      queryParams.set('search', searchTerm.trim());
     }
-    if (loc && loc.trim()) {
-      queryParams.set('location', loc.trim());
+    if (location?.trim()) {
+      queryParams.set('location', location.trim());
     }
     
-    // Navigate to jobs page with search parameters
     const queryString = queryParams.toString();
     const jobsPath = queryString ? `/jobs?${queryString}` : '/jobs';
     navigate(jobsPath);
-  }, [navigate]);
+  }, 300), [navigate]);
 
-  // Handle job category clicks
   const handleCategoryClick = useCallback((categoryName) => {
     navigate(`/jobs?category=${encodeURIComponent(categoryName)}`);
   }, [navigate]);
 
-  // Handle job save/unsave
   const handleJobSave = useCallback(async (jobId) => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -159,61 +286,87 @@ const HomePage = () => {
     }
     
     try {
-      await toggleSaveJob(jobId);
+      await jobInteractions?.toggleSaveJob(jobId);
     } catch (err) {
-      console.error('Failed to save/unsave job:', err);
-      setError('Failed to save job. Please try again.');
+      logger.error('Failed to save/unsave job:', err);
     }
-  }, [isAuthenticated, navigate, toggleSaveJob]);
+  }, [isAuthenticated, navigate, jobInteractions]);
+
+  const handleErrorDismiss = useCallback(() => {
+    // Clear error without refetching
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Memoized sections for better performance
+  const heroSection = useMemo(() => (
+    <React.Suspense fallback={<HeroSkeleton />}>
+      <HeroSection 
+        siteStats={siteStats}
+        isAuthenticated={isAuthenticated}
+        onSearch={handleSearch}
+      />
+    </React.Suspense>
+  ), [siteStats, isAuthenticated, handleSearch]);
+
+  const featuredJobsSection = useMemo(() => (
+    <React.Suspense fallback={<SectionSkeleton />}>
+      <FeaturedJobsSection 
+        jobs={featuredJobs}
+        loading={loading}
+        isJobSaved={jobInteractions?.isJobSaved}
+        onJobSave={handleJobSave}
+        isAuthenticated={isAuthenticated}
+      />
+    </React.Suspense>
+  ), [featuredJobs, loading, jobInteractions, handleJobSave, isAuthenticated]);
+
+  const categoriesSection = useMemo(() => (
+    <React.Suspense fallback={<SectionSkeleton />}>
+      <JobCategoriesSection 
+        categories={jobCategories}
+        onCategoryClick={handleCategoryClick}
+      />
+    </React.Suspense>
+  ), [jobCategories, handleCategoryClick]);
+
+  const staticSections = useMemo(() => (
+    <>
+      <React.Suspense fallback={<SectionSkeleton />}>
+        <HowItWorksSection />
+      </React.Suspense>
+      
+      <React.Suspense fallback={<SectionSkeleton />}>
+        <TestimonialsSection />
+      </React.Suspense>
+      
+      <React.Suspense fallback={<SectionSkeleton />}>
+        <CTASection isAuthenticated={isAuthenticated} />
+      </React.Suspense>
+    </>
+  ), [isAuthenticated]);
 
   return (
     <div className="homepage">
-      <HeroSection 
-        siteStats={memoizedSiteStats}
-        isAuthenticated={isAuthenticated}
-        onSearch={handleSearch}
-        loading={loading}
-      />
-
       {error && (
-        <div className="container mt-4">
-          <div className="alert alert-danger" role="alert">
-            {error}
-            <button 
-              className="btn btn-sm btn-outline-danger ms-2"
-              onClick={fetchHomePageData}
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+        <ErrorAlert 
+          error={error}
+          onDismiss={handleErrorDismiss}
+          onRetry={handleRetry}
+        />
       )}
 
-      <EnhancedJobFilters 
-        jobs={allJobs}
-        onFilteredJobs={handleFilteredJobs}
-        showResults={false}
-      />
-      
-      <FeaturedJobsSection 
-        jobs={memoizedFeaturedJobs}
-        isAuthenticated={isAuthenticated}
-        user={user}
-        isJobSaved={isJobSaved}
-        onJobSave={handleJobSave}
-        loading={loading}
-      />
-      
-      <JobCategoriesSection 
-        categories={memoizedJobCategories}
-        onCategoryClick={handleCategoryClick}
-      />
-      
-      <HowItWorksSection />
-      <TestimonialsSection />
-      <CTASection isAuthenticated={isAuthenticated} />
+      <main>
+        {heroSection}
+        {featuredJobsSection}
+        {categoriesSection}
+        {staticSections}
+      </main>
     </div>
   );
 };
 
-export default HomePage;
+// Export memoized component
+export default memo(HomePage);
